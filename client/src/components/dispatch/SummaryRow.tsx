@@ -17,110 +17,133 @@ export default function SummaryRow({
 }: SummaryRowProps) {
   return (
     <div
-      className="rounded-[var(--dp-radius)] overflow-hidden"
+      className="rounded-[var(--dp-radius)] summary-grid"
       style={{ background: 'var(--dp-surface)', border: '1px solid var(--dp-border)' }}
     >
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        {/* Next 24 hours */}
-        <Cell>
-          <Label>Next 24 hours</Label>
-          <div className="flex items-baseline gap-2">
-            <BigNum>{next24h.count}</BigNum>
-            <span className="text-sm tabular-nums" style={{ color: 'var(--dp-text-secondary)' }}>
-              {fmtEur(next24h.total)}
-            </span>
-          </div>
-          {next24h.firstPickup && (
-            <div className="text-xs mt-0.5" style={{ color: 'var(--dp-text-muted)' }}>
-              First pickup {next24h.firstPickup}
-            </div>
-          )}
-        </Cell>
+      <style>{`
+        .summary-grid > .summary-inner {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+        }
+        @media (max-width: 1024px) {
+          .summary-grid > .summary-inner {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+        @media (max-width: 640px) {
+          .summary-grid > .summary-inner {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        .summary-grid .summary-tile {
+          padding: 16px 20px;
+          position: relative;
+        }
+        .summary-grid .summary-tile:not(:last-child)::after {
+          content: '';
+          position: absolute;
+          right: 0;
+          top: 12px;
+          bottom: 12px;
+          width: 1px;
+          background: var(--dp-border);
+        }
+        @media (max-width: 1024px) {
+          .summary-grid .summary-tile:nth-child(3)::after {
+            display: none;
+          }
+        }
+        @media (max-width: 640px) {
+          .summary-grid .summary-tile:nth-child(even)::after {
+            display: none;
+          }
+        }
+      `}</style>
 
-        <Divider />
+      <div className="summary-inner">
+        {/* Next 24 hours */}
+        <div className="summary-tile">
+          <Label>Next 24 hours</Label>
+          <NumRow>
+            <BigNum>{next24h.count}</BigNum>
+            <Secondary>{fmtEur(next24h.total)}</Secondary>
+          </NumRow>
+          {next24h.firstPickup && (
+            <SubLine>First pickup {next24h.firstPickup}</SubLine>
+          )}
+        </div>
 
         {/* Next 7 days */}
-        <Cell>
+        <div className="summary-tile">
           <Label>Next 7 days</Label>
-          <div className="flex items-baseline gap-2">
+          <NumRow>
             <BigNum>{next7d.count}</BigNum>
-            <span className="text-sm tabular-nums" style={{ color: 'var(--dp-text-secondary)' }}>
-              {fmtEur(next7d.total)}
-            </span>
-          </div>
-        </Cell>
+            <Secondary>{fmtEur(next7d.total)}</Secondary>
+          </NumRow>
+        </div>
 
-        <Divider />
-
-        {/* Awaiting driver reply */}
-        <CellButton onClick={onFilterAwaitingReply}>
+        {/* Awaiting reply */}
+        <button className="summary-tile text-left w-full transition-colors hover:bg-[var(--dp-surface-2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--dp-accent)]" onClick={onFilterAwaitingReply}>
           <Label>Awaiting reply</Label>
-          <BigNum style={{ color: awaitingReply > 0 ? 'var(--dp-warning)' : undefined }}>
-            {awaitingReply}
-          </BigNum>
-        </CellButton>
+          <NumRow>
+            <BigNum color={awaitingReply > 0 ? 'var(--dp-warning)' : undefined}>{awaitingReply}</BigNum>
+          </NumRow>
+        </button>
 
-        <Divider />
-
-        {/* Driver not chosen */}
-        <CellButton onClick={onFilterNoDriver}>
+        {/* No driver yet */}
+        <button className="summary-tile text-left w-full transition-colors hover:bg-[var(--dp-surface-2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--dp-accent)]" onClick={onFilterNoDriver}>
           <Label>No driver yet</Label>
-          <BigNum>{noDriver}</BigNum>
-        </CellButton>
-
-        <Divider />
+          <NumRow>
+            <BigNum>{noDriver}</BigNum>
+          </NumRow>
+        </button>
 
         {/* To charge */}
-        <CellButton onClick={onFilterToCharge}>
+        <button className="summary-tile text-left w-full transition-colors hover:bg-[var(--dp-surface-2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--dp-accent)]" onClick={onFilterToCharge}>
           <Label>To charge</Label>
-          <div className="flex items-baseline gap-2">
-            <BigNum style={{ color: toCharge.count > 0 ? 'var(--dp-charge)' : undefined }}>
-              {toCharge.count}
-            </BigNum>
-            {toCharge.total > 0 && (
-              <span className="text-sm tabular-nums" style={{ color: 'var(--dp-charge)' }}>
-                {fmtEur(toCharge.total)}
-              </span>
-            )}
-          </div>
-        </CellButton>
+          <NumRow>
+            <BigNum color={toCharge.count > 0 ? 'var(--dp-charge)' : undefined}>{toCharge.count}</BigNum>
+            {toCharge.total > 0 && <Secondary color="var(--dp-charge)">{fmtEur(toCharge.total)}</Secondary>}
+          </NumRow>
+        </button>
       </div>
     </div>
   );
 }
 
-function Cell({ children }: { children: React.ReactNode }) {
-  return <div className="px-4 py-3 lg:px-5 lg:py-4">{children}</div>;
-}
-
-function CellButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="px-4 py-3 lg:px-5 lg:py-4 text-left w-full transition-colors hover:bg-[var(--dp-surface-2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dp-accent)]"
-    >
-      {children}
-    </button>
-  );
-}
-
-function Divider() {
-  return <div className="hidden lg:block w-px self-stretch" style={{ background: 'var(--dp-border)' }} />;
-}
-
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--dp-text-muted)' }}>
+    <div className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--dp-text-muted)', lineHeight: 1.2 }}>
       {children}
     </div>
   );
 }
 
-function BigNum({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function NumRow({ children }: { children: React.ReactNode }) {
+  return <div className="flex items-baseline gap-2">{children}</div>;
+}
+
+function BigNum({ children, color }: { children: React.ReactNode; color?: string }) {
   return (
-    <span className="font-heading text-2xl tabular-nums" style={{ color: 'var(--dp-text)', ...style }}>
+    <span className="font-heading text-2xl tabular-nums leading-none" style={{ color: color || 'var(--dp-text)' }}>
       {children}
     </span>
+  );
+}
+
+function Secondary({ children, color }: { children: React.ReactNode; color?: string }) {
+  return (
+    <span className="text-sm tabular-nums" style={{ color: color || 'var(--dp-text-secondary)' }}>
+      {children}
+    </span>
+  );
+}
+
+function SubLine({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-xs mt-1" style={{ color: 'var(--dp-text-muted)' }}>
+      {children}
+    </div>
   );
 }
 
