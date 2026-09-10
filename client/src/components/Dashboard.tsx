@@ -310,15 +310,15 @@ export default function Dashboard() {
 
         {/* Cards view */}
         {!loading && viewMode === 'cards' && displayProjects.length > 0 && (
-          <div className="space-y-1">
+          <div className="space-y-0">
             {groupedByDate.map(({ date, projects: dayProjects }) => {
               const { label, isToday } = getDayLabel(date);
               const total = dayProjects.reduce((s, p) => s + (p.price || 0), 0);
               const toCharge = dayProjects.filter(p => p.paymentStatus === 'charge').length;
               return (
-                <div key={date}>
+                <section key={date} className="relative">
                   <DayHeader date={date} label={label} isToday={isToday} count={dayProjects.length} total={total} toCharge={toCharge} onExport={() => handleExportDate(date)} />
-                  <div className="space-y-2">
+                  <div className="space-y-2 pb-4">
                     {dayProjects.map(p => (
                       <RideCard
                         key={p.id}
@@ -334,7 +334,7 @@ export default function Dashboard() {
                       />
                     ))}
                   </div>
-                </div>
+                </section>
               );
             })}
             {laterRidesCount > 0 && !showAllRides && (
@@ -402,7 +402,7 @@ function DayHeader({ date, label, isToday, count, total, toCharge, onExport }: {
   date: string; label: string; isToday: boolean; count: number; total: number; toCharge: number; onExport: () => void;
 }) {
   return (
-    <div className="sticky z-10 flex items-center justify-between px-1 py-2" style={{ top: 'var(--dp-topbar-h)', background: 'var(--dp-bg)' }}>
+    <div className="sticky z-20 flex items-center justify-between px-1 py-2" style={{ top: 0, background: 'var(--dp-bg)', borderBottom: '1px solid var(--dp-border)' }}>
       <div className="flex items-baseline gap-2">
         <span className="text-sm font-semibold" style={{ color: isToday ? 'var(--dp-accent)' : 'var(--dp-text)' }}>{label}</span>
         {!isToday && (
