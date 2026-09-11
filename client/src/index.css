@@ -21,6 +21,8 @@
   --dp-charge: #B84A1A;
   --dp-charge-bg: #FBE6DB;
   --dp-danger: #B42318;
+  --dp-on-accent: #FFFFFF;
+  --dp-on-success: #FFFFFF;
   --dp-sidebar-w: 228px;
   --dp-topbar-h: 64px;
   --dp-radius: 13px;
@@ -49,6 +51,8 @@
     --dp-charge: #EE8A5B;
     --dp-charge-bg: #2B1A10;
     --dp-danger: #F87171;
+    --dp-on-accent: #08211D;
+    --dp-on-success: #07210F;
   }
 }
 

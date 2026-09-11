@@ -10,6 +10,14 @@ interface DriverDashboardProps {
   onLogout: () => void;
 }
 
+// Split an address at its first comma for display (place / remainder)
+function splitAddress(addr: string): { place: string; rest: string } {
+  if (!addr) return { place: '', rest: '' };
+  const i = addr.indexOf(',');
+  if (i === -1) return { place: addr, rest: '' };
+  return { place: addr.slice(0, i), rest: addr.slice(i + 1).trim() };
+}
+
 // Project Card Component for Driver Portal
 const DriverProjectCard = ({ project, companyName, carTypeName }: { 
   project: any; 
@@ -67,6 +75,8 @@ const DriverProjectCard = ({ project, companyName, carTypeName }: {
 
   const urgencyColor = getUrgencyColor();
   const displayPrice = project.driver_fee && project.driver_fee > 0 ? project.driver_fee : project.price;
+  const pickup = splitAddress(project.pickup_location);
+  const dropoff = splitAddress(project.dropoff_location);
 
   return (
     <motion.div
@@ -82,204 +92,239 @@ const DriverProjectCard = ({ project, companyName, carTypeName }: {
         borderTop: `3px solid ${urgencyColor}`,
       }}
     >
-      <div className="p-5">
-        {/* Trip Header */}
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <Car className="w-5 h-5 shrink-0" style={{ color: 'var(--dp-text-muted)' }} />
-            <div className="min-w-0">
-              <h3 className="text-lg font-semibold truncate" style={{ color: 'var(--dp-text)' }}>{project.client_name}</h3>
-              <p className="text-sm flex items-center gap-1" style={{ color: 'var(--dp-text-muted)' }}>
-                <Building2 className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">{companyName}</span>
-              </p>
+      <div style={{ padding: '16px 16px 14px' }}>
+
+        {/* 1. HEADER ROW — time+date left, price+status right */}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="tabular-nums" style={{ fontSize: 30, fontWeight: 700, lineHeight: 0.95, color: 'var(--dp-text)' }}>
+              {formatTime(project.time)}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--dp-text-muted)', marginTop: 4 }}>
+              {formatDate(project.date)}
             </div>
           </div>
-
-          <div className="text-right shrink-0">
-            <div className="text-xl font-bold tabular-nums" style={{ color: 'var(--dp-success)' }}>
+          <div className="text-right shrink-0" style={{ marginLeft: 'auto' }}>
+            <div className="tabular-nums" style={{ fontSize: 19, fontWeight: 700, color: 'var(--dp-text)' }}>
               €{displayPrice.toFixed(2)}
             </div>
-          </div>
-        </div>
-
-        {/* Date and Time */}
-        <div
-          className="flex items-center justify-between mb-4 px-4 py-3"
-          style={{ background: 'var(--dp-surface-2)', borderRadius: 'var(--dp-radius)' }}
-        >
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
-            <span className="text-sm font-medium" style={{ color: 'var(--dp-text)' }}>{formatDate(project.date)}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
-            <span className="text-base font-bold tabular-nums" style={{ color: 'var(--dp-text)' }}>{formatTime(project.time)}</span>
-          </div>
-        </div>
-
-        {/* Locations */}
-        <div className="space-y-3 mb-4">
-          <div className="flex items-start gap-3">
-            <div className="p-1.5 rounded-md mt-0.5 shrink-0" style={{ background: 'var(--dp-success-bg)' }}>
-              <MapPin className="w-4 h-4" style={{ color: 'var(--dp-success)' }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--dp-success)' }}>Pickup</p>
-              <button
-                onClick={() => {
-                  const pickupUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(project.pickup_location)}`;
-                  window.open(pickupUrl, '_blank');
-                }}
-                className="text-sm font-medium leading-relaxed text-left underline decoration-dotted hover:decoration-solid transition-all duration-200"
-                style={{ color: 'var(--dp-accent)' }}
-                title="Open in Google Maps"
-              >
-                {project.pickup_location}
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="p-1.5 rounded-md mt-0.5 shrink-0" style={{ background: 'var(--dp-charge-bg)' }}>
-              <MapPin className="w-4 h-4" style={{ color: 'var(--dp-charge)' }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--dp-charge)' }}>Dropoff</p>
-              <button
-                onClick={() => {
-                  const dropoffUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(project.dropoff_location)}`;
-                  window.open(dropoffUrl, '_blank');
-                }}
-                className="text-sm font-medium leading-relaxed text-left underline decoration-dotted hover:decoration-solid transition-all duration-200"
-                style={{ color: 'var(--dp-accent)' }}
-                title="Open in Google Maps"
-              >
-                {project.dropoff_location}
-              </button>
-            </div>
-          </div>
-
-          {/* Route Navigation Button */}
-          <div className="pt-3" style={{ borderTop: '1px solid var(--dp-border)' }}>
-            <button
-              onClick={() => {
-                const routeUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(project.pickup_location)}&destination=${encodeURIComponent(project.dropoff_location)}`;
-                window.open(routeUrl, '_blank');
-              }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium transition-colors duration-200"
-              style={{
-                background: 'var(--dp-accent-soft)',
-                color: 'var(--dp-accent)',
-                borderRadius: 'var(--dp-radius)',
-              }}
-              title="Get directions from pickup to dropoff"
-            >
-              <MapPin className="w-4 h-4" />
-              <span>Get Directions</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Trip Details */}
-        <div
-          className="grid grid-cols-2 gap-3 mb-4 p-4"
-          style={{ background: 'var(--dp-surface-2)', borderRadius: 'var(--dp-radius)' }}
-        >
-          <div className="flex items-center gap-2">
-            <Users className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
-            <span className="text-sm font-medium" style={{ color: 'var(--dp-text-secondary)' }}>{project.passengers} passenger{project.passengers !== 1 ? 's' : ''}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Phone className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
-            <a
-              href={`tel:${project.client_phone}`}
-              className="text-sm font-medium hover:opacity-80"
-              style={{ color: 'var(--dp-accent)' }}
-            >
-              Call Client
-            </a>
-            {project.client_phone && (
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(project.client_phone || '');
-                  setCopiedId(project.id);
-                  setTimeout(() => setCopiedId(null), 2000);
-                }}
-                className="p-1 rounded transition-colors"
-                style={{ color: 'var(--dp-text-muted)' }}
-                title="Copy contact number"
-              >
-                {copiedId === project.id ? <Check className="w-3.5 h-3.5" style={{ color: 'var(--dp-success)' }} /> : <Copy className="w-3.5 h-3.5" />}
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Car className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
-            <span className="text-sm font-medium" style={{ color: 'var(--dp-text-secondary)' }}>{carTypeName}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
             <span
-              className="text-sm font-medium"
-              style={{ color: project.payment_status === 'paid' ? 'var(--dp-success)' : 'var(--dp-charge)' }}
+              className="inline-flex items-center rounded-full mt-1"
+              style={{ ...getStatusStyle(project.acceptance_status), padding: '2px 9px', fontSize: 11, fontWeight: 600, lineHeight: '18px' }}
             >
-              {project.payment_status === 'paid' ? 'Already Paid' : 'Charge the Client'}
+              {project.acceptance_status === 'pending' && <Clock className="mr-1" style={{ width: 12, height: 12 }} />}
+              {project.acceptance_status === 'accepted' && <CheckCircle className="mr-1" style={{ width: 12, height: 12 }} />}
+              {project.acceptance_status === 'started' && <PlayCircle className="mr-1" style={{ width: 12, height: 12 }} />}
+              {project.acceptance_status === 'declined' && <XCircle className="mr-1" style={{ width: 12, height: 12 }} />}
+              {project.acceptance_status.charAt(0).toUpperCase() + project.acceptance_status.slice(1)}
             </span>
           </div>
         </div>
 
-        {/* Status */}
-        <div className="mb-4">
-          <span
-            className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
-            style={getStatusStyle(project.acceptance_status)}
-          >
-            {project.acceptance_status === 'pending' && <Clock className="w-4 h-4 mr-1" />}
-            {project.acceptance_status === 'accepted' && <CheckCircle className="w-4 h-4 mr-1" />}
-            {project.acceptance_status === 'started' && <PlayCircle className="w-4 h-4 mr-1" />}
-            {project.acceptance_status === 'declined' && <XCircle className="w-4 h-4 mr-1" />}
-            {project.acceptance_status.charAt(0).toUpperCase() + project.acceptance_status.slice(1)}
-          </span>
+        {/* 2. CUSTOMER ROW */}
+        <div className="flex items-baseline flex-wrap gap-x-2 gap-y-0.5" style={{ paddingTop: 10, marginTop: 12, borderTop: '1px solid var(--dp-border)' }}>
+          <span style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--dp-text)' }}>{project.client_name}</span>
+          <span style={{ fontSize: 12, color: 'var(--dp-text-muted)' }}>{companyName}</span>
         </div>
 
-        {/* Description */}
-        {project.description && (
-          <div
-            className="mb-4 p-3"
+        {/* 3. ROUTE BLOCK */}
+        <div className="relative" style={{ paddingLeft: 26, marginTop: 14, marginBottom: 14 }}>
+          {/* Connector line */}
+          <span
+            className="absolute"
+            style={{ left: 5, top: 12, bottom: 12, width: 1, background: 'var(--dp-border)' }}
+          />
+
+          {/* Pickup */}
+          <div style={{ paddingBottom: 16 }}>
+            <span
+              className="absolute"
+              style={{ left: 0, top: 1, width: 11, height: 11, borderRadius: '50%', border: '2px solid var(--dp-accent)', background: 'transparent' }}
+            />
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--dp-text-muted)', marginBottom: 2 }}>Pickup</div>
+            <button
+              onClick={() => {
+                const pickupUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(project.pickup_location)}`;
+                window.open(pickupUrl, '_blank');
+              }}
+              className="text-left transition-opacity duration-200 hover:opacity-70"
+              title="Open in Google Maps"
+              style={{ display: 'block', width: '100%' }}
+            >
+              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--dp-text)', wordBreak: 'break-word' }}>{pickup.place || project.pickup_location}</div>
+              {pickup.rest && <div style={{ fontSize: 12.5, color: 'var(--dp-text-muted)', wordBreak: 'break-word', marginTop: 1 }}>{pickup.rest}</div>}
+            </button>
+          </div>
+
+          {/* Dropoff */}
+          <div>
+            <span
+              className="absolute"
+              style={{ left: 0, bottom: 0, width: 11, height: 11, borderRadius: 2, background: 'var(--dp-charge)' }}
+            />
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--dp-text-muted)', marginBottom: 2 }}>Dropoff</div>
+            <button
+              onClick={() => {
+                const dropoffUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(project.dropoff_location)}`;
+                window.open(dropoffUrl, '_blank');
+              }}
+              className="text-left transition-opacity duration-200 hover:opacity-70"
+              title="Open in Google Maps"
+              style={{ display: 'block', width: '100%' }}
+            >
+              <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--dp-text)', wordBreak: 'break-word' }}>{dropoff.place || project.dropoff_location}</div>
+              {dropoff.rest && <div style={{ fontSize: 12.5, color: 'var(--dp-text-muted)', wordBreak: 'break-word', marginTop: 1 }}>{dropoff.rest}</div>}
+            </button>
+          </div>
+        </div>
+
+        {/* 4. PRIMARY ACTIONS — Directions + Call */}
+        <div className="grid grid-cols-2" style={{ gap: 9, marginBottom: 12 }}>
+          <button
+            onClick={() => {
+              const routeUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(project.pickup_location)}&destination=${encodeURIComponent(project.dropoff_location)}`;
+              window.open(routeUrl, '_blank');
+            }}
+            className="flex items-center justify-center gap-2 transition-opacity duration-200 hover:opacity-80"
             style={{
-              background: 'var(--dp-warning-bg)',
-              border: '1px solid var(--dp-warning-bg)',
-              borderRadius: 'var(--dp-radius)',
+              minHeight: 44,
+              borderRadius: 10,
+              background: 'var(--dp-accent)',
+              color: 'var(--dp-on-accent)',
+              fontSize: 13.5,
+              fontWeight: 700,
+            }}
+            title="Get directions from pickup to dropoff"
+          >
+            <MapPin style={{ width: 15, height: 15 }} />
+            <span>Directions</span>
+          </button>
+          <a
+            href={`tel:${project.client_phone}`}
+            className="flex items-center justify-center gap-2 transition-opacity duration-200 hover:opacity-80"
+            style={{
+              minHeight: 44,
+              borderRadius: 10,
+              border: '1px solid var(--dp-border)',
+              background: 'transparent',
+              color: 'var(--dp-text)',
+              fontSize: 13.5,
+              fontWeight: 600,
+              textDecoration: 'none',
             }}
           >
-            <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--dp-warning)' }}>
-              Special Instructions
-            </p>
-            <p className="text-sm" style={{ color: 'var(--dp-text)' }}>{project.description}</p>
+            <Phone style={{ width: 15, height: 15 }} />
+            <span>Call Client</span>
+          </a>
+        </div>
+
+        {/* 5. PHONE ROW (only when phone exists) */}
+        {project.client_phone && (
+          <div
+            className="flex items-center gap-2"
+            style={{
+              background: 'var(--dp-surface-2)',
+              border: '1px solid var(--dp-border)',
+              borderRadius: 10,
+              padding: '7px 7px 7px 12px',
+              marginBottom: 12,
+            }}
+          >
+            <Phone style={{ width: 14, height: 14, color: 'var(--dp-text-muted)', flexShrink: 0 }} />
+            <span
+              className="truncate"
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--dp-text)', flex: 1, minWidth: 0 }}
+            >
+              {project.client_phone}
+            </span>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(project.client_phone || '');
+                setCopiedId(project.id);
+                setTimeout(() => setCopiedId(null), 2000);
+              }}
+              className="flex items-center gap-1.5 shrink-0 transition-colors duration-200"
+              style={{
+                minHeight: 40,
+                padding: '0 14px',
+                borderRadius: 8,
+                border: '1px solid var(--dp-border)',
+                background: copiedId === project.id ? 'var(--dp-success-bg)' : 'var(--dp-surface)',
+                color: copiedId === project.id ? 'var(--dp-success)' : 'var(--dp-text)',
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+              title="Copy contact number"
+            >
+              {copiedId === project.id ? <Check style={{ width: 14, height: 14 }} /> : <Copy style={{ width: 14, height: 14 }} />}
+              <span>{copiedId === project.id ? 'Copied' : 'Copy'}</span>
+            </button>
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex flex-col space-y-2">
+        {/* 6. META LINE */}
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5" style={{ fontSize: 12.5, color: 'var(--dp-text-secondary)', marginBottom: 12 }}>
+          <span>{project.passengers} passenger{project.passengers !== 1 ? 's' : ''}</span>
+          <span style={{ color: 'var(--dp-border-strong)' }}>&middot;</span>
+          <span>{carTypeName}</span>
+          <span style={{ color: 'var(--dp-border-strong)' }}>&middot;</span>
+          <span style={{ color: project.payment_status === 'paid' ? 'var(--dp-success)' : 'var(--dp-charge)' }}>
+            {project.payment_status === 'paid' ? 'Already Paid' : 'Charge the Client'}
+          </span>
+        </div>
+
+        {/* 7. SPECIAL INSTRUCTIONS */}
+        {project.description && (
+          <div
+            style={{
+              background: 'var(--dp-warning-bg)',
+              borderLeft: '2px solid var(--dp-warning)',
+              borderRadius: '0 8px 8px 0',
+              padding: '10px 11px',
+              marginBottom: 12,
+            }}
+          >
+            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--dp-warning)', marginBottom: 3 }}>
+              Special Instructions
+            </p>
+            <p style={{ fontSize: 12.5, color: 'var(--dp-text-secondary)' }}>{project.description}</p>
+          </div>
+        )}
+
+        {/* 8. ACCEPT / DECLINE (pending), START TRIP (accepted), COMPLETE (started) */}
+        <div className="flex flex-col" style={{ gap: 8 }}>
           {project.acceptance_status === 'pending' && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2" style={{ gap: 10 }}>
               <button
                 onClick={() => handleStatusUpdate('accepted')}
                 disabled={updating}
-                className="flex items-center justify-center gap-2 py-3 px-4 font-medium text-white disabled:opacity-50 transition-colors"
-                style={{ background: 'var(--dp-success)', borderRadius: 'var(--dp-radius)' }}
+                className="flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+                style={{
+                  minHeight: 44,
+                  borderRadius: 10,
+                  background: 'var(--dp-success)',
+                  color: 'var(--dp-on-success)',
+                  fontSize: 14,
+                  fontWeight: 700,
+                }}
               >
-                <CheckCircle className="w-5 h-5" />
+                <CheckCircle style={{ width: 17, height: 17 }} />
                 <span>{updating ? 'Accepting...' : 'Accept Trip'}</span>
               </button>
               <button
                 onClick={() => handleStatusUpdate('declined')}
                 disabled={updating}
-                className="flex items-center justify-center gap-2 py-3 px-4 font-medium text-white disabled:opacity-50 transition-colors"
-                style={{ background: 'var(--dp-danger)', borderRadius: 'var(--dp-radius)' }}
+                className="flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+                style={{
+                  minHeight: 44,
+                  borderRadius: 10,
+                  border: '1px solid color-mix(in srgb, var(--dp-danger) 40%, transparent)',
+                  background: 'transparent',
+                  color: 'var(--dp-danger)',
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
               >
-                <XCircle className="w-5 h-5" />
                 <span>{updating ? 'Declining...' : 'Decline'}</span>
               </button>
             </div>
@@ -289,10 +334,17 @@ const DriverProjectCard = ({ project, companyName, carTypeName }: {
             <button
               onClick={() => handleStatusUpdate('started')}
               disabled={updating}
-              className="flex items-center justify-center gap-2 py-3 px-4 font-medium text-white disabled:opacity-50 transition-colors"
-              style={{ background: 'var(--dp-accent)', borderRadius: 'var(--dp-radius)' }}
+              className="flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+              style={{
+                minHeight: 44,
+                borderRadius: 10,
+                background: 'var(--dp-accent)',
+                color: 'var(--dp-on-accent)',
+                fontSize: 14,
+                fontWeight: 700,
+              }}
             >
-              <PlayCircle className="w-5 h-5" />
+              <PlayCircle style={{ width: 17, height: 17 }} />
               <span>{updating ? 'Starting...' : 'Start Trip'}</span>
             </button>
           )}
@@ -301,40 +353,61 @@ const DriverProjectCard = ({ project, companyName, carTypeName }: {
             <button
               onClick={() => handleStatusUpdate('completed')}
               disabled={updating}
-              className="flex items-center justify-center gap-2 py-3 px-4 font-medium text-white disabled:opacity-50 transition-colors"
-              style={{ background: 'var(--dp-success)', borderRadius: 'var(--dp-radius)' }}
+              className="flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+              style={{
+                minHeight: 44,
+                borderRadius: 10,
+                background: 'var(--dp-success)',
+                color: 'var(--dp-on-success)',
+                fontSize: 14,
+                fontWeight: 700,
+              }}
             >
-              <CheckCircle2 className="w-5 h-5" />
+              <CheckCircle2 style={{ width: 17, height: 17 }} />
               <span>{updating ? 'Completing...' : 'Complete Trip'}</span>
             </button>
           )}
           {project.acceptance_status === 'completed' && (
             <div
-              className="flex items-center justify-center gap-2 py-3 px-4 font-medium"
-              style={{ background: 'var(--dp-success-bg)', color: 'var(--dp-success)', borderRadius: 'var(--dp-radius)' }}
+              className="flex items-center justify-center gap-2"
+              style={{
+                minHeight: 44,
+                borderRadius: 10,
+                background: 'var(--dp-success-bg)',
+                color: 'var(--dp-success)',
+                fontSize: 14,
+                fontWeight: 600,
+              }}
             >
-              <CheckCircle2 className="w-5 h-5" />
+              <CheckCircle2 style={{ width: 17, height: 17 }} />
               <span>Trip Completed</span>
             </div>
           )}
 
           {project.acceptance_status === 'declined' && (
             <div
-              className="flex items-center justify-center gap-2 py-3 px-4 font-medium"
-              style={{ background: 'var(--dp-charge-bg)', color: 'var(--dp-danger)', borderRadius: 'var(--dp-radius)' }}
+              className="flex items-center justify-center gap-2"
+              style={{
+                minHeight: 44,
+                borderRadius: 10,
+                background: 'var(--dp-charge-bg)',
+                color: 'var(--dp-danger)',
+                fontSize: 14,
+                fontWeight: 600,
+              }}
             >
-              <XCircle className="w-5 h-5" />
+              <XCircle style={{ width: 17, height: 17 }} />
               <span>Trip Declined</span>
             </div>
           )}
         </div>
 
-        {/* Booking ID */}
+        {/* 9. BOOKING REFERENCE */}
         {project.booking_id && (
-          <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--dp-border)' }}>
-            <p className="text-xs font-mono" style={{ color: 'var(--dp-text-muted)' }}>
-              Booking Reference: <span>{project.booking_id}</span>
-            </p>
+          <div style={{ marginTop: 10 }}>
+            <span style={{ fontSize: 10.5, color: 'var(--dp-text-muted)', fontFamily: 'var(--font-mono)' }}>
+              Booking Reference: {project.booking_id}
+            </span>
           </div>
         )}
       </div>
