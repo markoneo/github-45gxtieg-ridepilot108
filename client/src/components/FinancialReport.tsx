@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Calendar, Building2, DollarSign, FileText, TrendingUp, ChartBar as BarChart2 } from 'lucide-react';
+import { Download, Calendar, Building2, DollarSign, FileText, TrendingUp, ChartBar as BarChart2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 import { saveAs } from 'file-saver';
+import DispatchLayout from './dispatch/DispatchLayout';
 
 interface NetProfitData {
   [month: string]: {
@@ -46,6 +47,41 @@ interface DriverEarningsData {
     [month: string]: number;
   };
 }
+
+const card: React.CSSProperties = {
+  background: 'var(--dp-surface)',
+  border: '1px solid var(--dp-border)',
+  borderRadius: 'var(--dp-radius)',
+};
+
+const selectStyle: React.CSSProperties = {
+  background: 'var(--dp-surface)',
+  border: '1px solid var(--dp-border)',
+  borderRadius: 10,
+  padding: '9px 14px',
+  height: 40,
+  fontSize: 14,
+  color: 'var(--dp-text)',
+  outline: 'none',
+};
+
+const thBase: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 600,
+  textTransform: 'uppercase' as const,
+  letterSpacing: '.05em',
+  color: 'var(--dp-text-muted)',
+  background: 'var(--dp-surface-2)',
+  padding: '10px 16px',
+  whiteSpace: 'nowrap' as const,
+  textAlign: 'left' as const,
+};
+
+const tdBase: React.CSSProperties = {
+  padding: '10px 16px',
+  whiteSpace: 'nowrap' as const,
+  fontSize: 14,
+};
 
 export default function FinancialReport() {
   const navigate = useNavigate();
@@ -420,228 +456,201 @@ export default function FinancialReport() {
     }
   };
 
+  // Helper: get sorted months from driver earnings
+  const getSortedDriverMonths = () => {
+    const monthsWithEarnings = new Set<string>();
+    driverEarningsData.forEach(driver => {
+      Object.keys(driver.monthlyEarnings).forEach(month => {
+        monthsWithEarnings.add(month);
+      });
+    });
+    return Array.from(monthsWithEarnings).sort((a, b) => {
+      const monthOrder = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      return monthOrder.indexOf(a) - monthOrder.indexOf(b);
+    });
+  };
+
+  // Helper: sorted profit months
+  const getSortedProfitMonths = () => {
+    return Object.keys(netProfitData).sort((a, b) => {
+      const monthOrder = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      return monthOrder.indexOf(a) - monthOrder.indexOf(b);
+    });
+  };
+
+  const stickyLeft: React.CSSProperties = {
+    position: 'sticky',
+    left: 0,
+    zIndex: 2,
+    borderRight: '1px solid var(--dp-border)',
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center">
-            <button
-              onClick={() => navigate('/statistics')}
-              className="flex items-center text-gray-600 hover:text-gray-900 mb-1 sm:mb-0 mr-3"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              <span>Back</span>
-            </button>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Financial Report</h1>
+    <DispatchLayout pageTitle="Financial Report">
+      <div style={{ maxWidth: 1100 }} className="mx-auto space-y-5">
+        {/* Page header + controls */}
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h1 className="font-heading" style={{ fontSize: 22, color: 'var(--dp-text)' }}>Financial Report</h1>
+              <p className="text-sm mt-0.5" style={{ color: 'var(--dp-text-muted)' }}>Revenue breakdown by company, driver and period</p>
+            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* View mode + filters bar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-wrap">
             {/* View Mode Toggle */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('monthly')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  viewMode === 'monthly' 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <BarChart2 className="w-4 h-4 mr-1 inline" />
-                Monthly
-              </button>
-              <button
-                onClick={() => setViewMode('daily')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  viewMode === 'daily' 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Calendar className="w-4 h-4 mr-1 inline" />
-                Daily
-              </button>
-              <button
-                onClick={() => setViewMode('profit')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  viewMode === 'profit' 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <TrendingUp className="w-4 h-4 mr-1 inline" />
-                Net Profit
-              </button>
-              <button
-                onClick={() => setViewMode('drivers')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  viewMode === 'drivers' 
-                    ? 'bg-white text-gray-900 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Building2 className="w-4 h-4 mr-1 inline" />
-                Drivers
-              </button>
+            <div className="flex p-1" style={{ background: 'var(--dp-surface-2)', borderRadius: 10 }}>
+              {([
+                { key: 'monthly', icon: BarChart2, label: 'Monthly' },
+                { key: 'daily', icon: Calendar, label: 'Daily' },
+                { key: 'profit', icon: TrendingUp, label: 'Net Profit' },
+                { key: 'drivers', icon: Building2, label: 'Drivers' },
+              ] as const).map(item => (
+                <button
+                  key={item.key}
+                  onClick={() => setViewMode(item.key)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors"
+                  style={{
+                    borderRadius: 8,
+                    background: viewMode === item.key ? 'var(--dp-surface)' : 'transparent',
+                    color: viewMode === item.key ? 'var(--dp-accent)' : 'var(--dp-text-secondary)',
+                    border: viewMode === item.key ? '1px solid var(--dp-border)' : '1px solid transparent',
+                  }}
+                >
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </button>
+              ))}
             </div>
 
-            <div className="flex items-center bg-white border rounded-lg px-3 py-2 shadow-sm">
-              <Calendar className="h-5 w-5 text-gray-400 mr-2" />
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              style={selectStyle}
+            >
+              {years.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+
+            {viewMode === 'daily' && (
               <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="border-none focus:ring-0 text-gray-700 py-1 pl-2 pr-7 text-sm"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                style={selectStyle}
               >
-                {years.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
+                {Array.from({ length: 12 }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    {new Date(0, i).toLocaleString('default', { month: 'long' })}
                   </option>
                 ))}
               </select>
-            </div>
-
-            {viewMode === 'daily' && (
-              <div className="flex items-center bg-white border rounded-lg px-3 py-2 shadow-sm">
-                <Calendar className="h-5 w-5 text-gray-400 mr-2" />
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                  className="border-none focus:ring-0 text-gray-700 py-1 pl-2 pr-7 text-sm"
-                >
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <option key={i + 1} value={i + 1}>
-                      {new Date(0, i).toLocaleString('default', { month: 'long' })}
-                    </option>
-                  ))}
-                </select>
-              </div>
             )}
 
             <button
               onClick={generateCsv}
-              className="flex items-center justify-center bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-700 shadow-sm"
+              className="flex items-center gap-2 text-sm font-medium transition-opacity hover:opacity-80"
+              style={{
+                padding: '9px 14px',
+                borderRadius: 10,
+                border: '1px solid var(--dp-border-strong)',
+                background: 'transparent',
+                color: 'var(--dp-text)',
+                height: 40,
+              }}
             >
-              <Download className="w-4 h-4 mr-2" />
+              <Download className="w-4 h-4" />
               Export CSV
             </button>
           </div>
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center p-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-10 w-10" style={{ borderTop: '2px solid var(--dp-accent)', borderBottom: '2px solid var(--dp-accent)', borderLeft: '2px solid transparent', borderRight: '2px solid transparent' }} />
           </div>
         ) : (
           <>
-            <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
-              <div className="px-4 py-5 sm:px-6 border-b border-gray-200 bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <DollarSign className="h-5 w-5 text-green-600 mr-2" />
-                    <h2 className="text-lg font-medium text-gray-900">
-                      {viewMode === 'monthly' ? 'Year-to-Date Total' : 
-                        viewMode === 'daily' ? 'Month Total' : 
-                        viewMode === 'profit' ? 'Net Profit Analysis' :
-                        'Driver Earnings Analysis'}: 
-                      {viewMode !== 'profit' && viewMode !== 'drivers' && (
-                        <span className="font-bold text-green-600 ml-2">
-                          €{viewMode === 'monthly' 
-                            ? yearToDate.toFixed(2) 
-                            : Object.values(filteredDailyData).reduce((sum, day) => sum + day.total, 0).toFixed(2)
-                          }
-                        </span>
-                      )}
-                      {viewMode === 'drivers' && (
-                        <span className="font-bold text-blue-600 ml-2">
-                          €{driverEarningsData.reduce((sum, driver) => sum + driver.total, 0).toFixed(2)}
-                        </span>
-                      )}
-                    </h2>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {viewMode === 'monthly' 
-                      ? selectedYear 
-                      : viewMode === 'daily' ? `${new Date(0, selectedMonth - 1).toLocaleString('default', { month: 'long' })} ${selectedYear}`
-                      : `${selectedYear} Analysis`
-                    }
-                  </div>
+            {/* Summary header */}
+            <div className="overflow-hidden" style={card}>
+              <div className="px-5 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--dp-border)', background: 'var(--dp-surface-2)' }}>
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
+                  <span className="text-sm font-medium" style={{ color: 'var(--dp-text)' }}>
+                    {viewMode === 'monthly' ? 'Year-to-Date Total' : 
+                      viewMode === 'daily' ? 'Month Total' : 
+                      viewMode === 'profit' ? 'Net Profit Analysis' :
+                      'Driver Earnings Analysis'}: 
+                    {viewMode !== 'profit' && viewMode !== 'drivers' && (
+                      <span className="font-bold ml-1 tabular-nums" style={{ color: 'var(--dp-success)', fontFamily: 'var(--font-mono)' }}>
+                        €{viewMode === 'monthly' 
+                          ? yearToDate.toFixed(2) 
+                          : Object.values(filteredDailyData).reduce((sum, day) => sum + day.total, 0).toFixed(2)
+                        }
+                      </span>
+                    )}
+                    {viewMode === 'drivers' && (
+                      <span className="font-bold ml-1 tabular-nums" style={{ color: 'var(--dp-accent)', fontFamily: 'var(--font-mono)' }}>
+                        €{driverEarningsData.reduce((sum, driver) => sum + driver.total, 0).toFixed(2)}
+                      </span>
+                    )}
+                  </span>
                 </div>
+                <span className="text-xs" style={{ color: 'var(--dp-text-muted)' }}>
+                  {viewMode === 'monthly' 
+                    ? selectedYear 
+                    : viewMode === 'daily' ? `${new Date(0, selectedMonth - 1).toLocaleString('default', { month: 'long' })} ${selectedYear}`
+                    : `${selectedYear} Analysis`
+                  }
+                </span>
               </div>
 
               <div className="overflow-x-auto">
                 {viewMode === 'drivers' ? (
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="sticky left-0 bg-gray-50 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
-                          Driver
-                        </th>
-                        {(() => {
-                          // Get all months that have driver earnings
-                          const monthsWithEarnings = new Set<string>();
-                          driverEarningsData.forEach(driver => {
-                            Object.keys(driver.monthlyEarnings).forEach(month => {
-                              monthsWithEarnings.add(month);
-                            });
-                          });
-                          
-                          const sortedMonths = Array.from(monthsWithEarnings).sort((a, b) => {
-                            const monthOrder = [
-                              'January', 'February', 'March', 'April', 'May', 'June',
-                              'July', 'August', 'September', 'October', 'November', 'December'
-                            ];
-                            return monthOrder.indexOf(a) - monthOrder.indexOf(b);
-                          });
-                          
-                          return sortedMonths.map((month) => (
-                            <th
-                              key={month}
-                              scope="col"
-                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                              {month}
-                            </th>
-                          ));
-                        })()}
-                        <th scope="col" className="bg-gray-100 px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                          Total
-                        </th>
+                  /* ─── Drivers Table ─── */
+                  <table className="w-full" style={{ minWidth: 700 }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--dp-border)' }}>
+                        <th style={{ ...thBase, ...stickyLeft, background: 'var(--dp-surface-2)' }}>Driver</th>
+                        {getSortedDriverMonths().map((month) => (
+                          <th key={month} style={{ ...thBase, textAlign: 'right' }}>{month}</th>
+                        ))}
+                        <th style={{ ...thBase, textAlign: 'right', background: 'var(--dp-surface-2)', fontWeight: 700, color: 'var(--dp-text)' }}>Total</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {driverEarningsData.map((driver, index) => {
-                        // Get all months that have driver earnings
-                        const monthsWithEarnings = new Set<string>();
-                        driverEarningsData.forEach(d => {
-                          Object.keys(d.monthlyEarnings).forEach(month => {
-                            monthsWithEarnings.add(month);
-                          });
-                        });
-                        
-                        const sortedMonths = Array.from(monthsWithEarnings).sort((a, b) => {
-                          const monthOrder = [
-                            'January', 'February', 'March', 'April', 'May', 'June',
-                            'July', 'August', 'September', 'October', 'November', 'December'
-                          ];
-                          return monthOrder.indexOf(a) - monthOrder.indexOf(b);
-                        });
-                        
+                    <tbody>
+                      {driverEarningsData.map((driver) => {
+                        const sortedMonths = getSortedDriverMonths();
                         return (
-                          <tr key={driver.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="sticky left-0 px-6 py-3 whitespace-nowrap font-medium text-gray-900 border-r border-gray-200 bg-inherit">
-                              <div className="flex items-center">
-                                <Building2 className="w-4 h-4 text-gray-400 mr-2" />
+                          <tr
+                            key={driver.id}
+                            className="transition-colors"
+                            style={{ borderBottom: '1px solid var(--dp-border)' }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--dp-surface-2)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <td style={{ ...tdBase, ...stickyLeft, background: 'inherit', fontWeight: 500, color: 'var(--dp-text)' }}>
+                              <div className="flex items-center gap-2">
+                                <Building2 className="w-3.5 h-3.5" style={{ color: 'var(--dp-text-muted)' }} />
                                 {driver.name}
                               </div>
                             </td>
                             {sortedMonths.map((month) => {
                               const value = driver.monthlyEarnings[month] || 0;
                               return (
-                                <td key={`${driver.id}-${month}`} className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
+                                <td key={`${driver.id}-${month}`} className="tabular-nums" style={{ ...tdBase, textAlign: 'right', color: value > 0 ? 'var(--dp-text)' : 'var(--dp-text-muted)', fontFamily: 'var(--font-mono)' }}>
                                   {value > 0 ? `€${value.toFixed(2)}` : '—'}
                                 </td>
                               );
                             })}
-                            <td className="bg-gray-100 px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <td className="tabular-nums" style={{ ...tdBase, textAlign: 'right', fontWeight: 600, color: 'var(--dp-text)', fontFamily: 'var(--font-mono)', background: 'var(--dp-surface-2)' }}>
                               €{driver.total.toFixed(2)}
                             </td>
                           </tr>
@@ -649,324 +658,262 @@ export default function FinancialReport() {
                       })}
                     </tbody>
                     <tfoot>
-                      <tr className="bg-blue-50 border-t-2 border-gray-300">
-                        <th className="sticky left-0 bg-blue-50 px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200">
+                      <tr style={{ background: 'var(--dp-surface-2)', borderTop: '2px solid var(--dp-border)' }}>
+                        <td style={{ ...tdBase, ...stickyLeft, background: 'var(--dp-surface-2)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--dp-text)' }}>
                           Monthly Total
-                        </th>
-                        {(() => {
-                          // Get all months that have driver earnings
-                          const monthsWithEarnings = new Set<string>();
-                          driverEarningsData.forEach(driver => {
-                            Object.keys(driver.monthlyEarnings).forEach(month => {
-                              monthsWithEarnings.add(month);
-                            });
-                          });
-                          
-                          const sortedMonths = Array.from(monthsWithEarnings).sort((a, b) => {
-                            const monthOrder = [
-                              'January', 'February', 'March', 'April', 'May', 'June',
-                              'July', 'August', 'September', 'October', 'November', 'December'
-                            ];
-                            return monthOrder.indexOf(a) - monthOrder.indexOf(b);
-                          });
-                          
-                          return sortedMonths.map((month) => {
-                            const monthTotal = driverEarningsData.reduce((sum, driver) => 
-                              sum + (driver.monthlyEarnings[month] || 0), 0);
-                            return (
-                              <th
-                                key={`total-${month}`}
-                                className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
-                              >
-                                €{monthTotal.toFixed(2)}
-                              </th>
-                            );
-                          });
-                        })()}
-                        <th className="bg-blue-100 px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
+                        </td>
+                        {getSortedDriverMonths().map((month) => {
+                          const monthTotal = driverEarningsData.reduce((sum, driver) => sum + (driver.monthlyEarnings[month] || 0), 0);
+                          return (
+                            <td key={`total-${month}`} className="tabular-nums" style={{ ...tdBase, textAlign: 'right', fontWeight: 600, color: 'var(--dp-text)', fontFamily: 'var(--font-mono)' }}>
+                              €{monthTotal.toFixed(2)}
+                            </td>
+                          );
+                        })}
+                        <td className="tabular-nums" style={{ ...tdBase, textAlign: 'right', fontWeight: 700, color: 'var(--dp-text)', fontFamily: 'var(--font-mono)', background: 'var(--dp-surface-2)' }}>
                           €{driverEarningsData.reduce((sum, driver) => sum + driver.total, 0).toFixed(2)}
-                        </th>
+                        </td>
                       </tr>
                     </tfoot>
                   </table>
                 ) : viewMode === 'profit' ? (
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="sticky left-0 bg-gray-50 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
-                          Month
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Revenue
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Driver Payments
-                        </th>
-                        <th scope="col" className="bg-gray-100 px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                          Net Profit
-                        </th>
+                  /* ─── Net Profit Table ─── */
+                  <table className="w-full">
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--dp-border)' }}>
+                        <th style={{ ...thBase, ...stickyLeft, background: 'var(--dp-surface-2)' }}>Month</th>
+                        <th style={{ ...thBase, textAlign: 'right' }}>Revenue</th>
+                        <th style={{ ...thBase, textAlign: 'right' }}>Driver Payments</th>
+                        <th style={{ ...thBase, textAlign: 'right', fontWeight: 700, color: 'var(--dp-text)', background: 'var(--dp-surface-2)' }}>Net Profit</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {(() => {
-                        // Sort months chronologically
-                        const months = Object.keys(netProfitData).sort((a, b) => {
-                          const monthOrder = [
-                            'January', 'February', 'March', 'April', 'May', 'June',
-                            'July', 'August', 'September', 'October', 'November', 'December'
-                          ];
-                          return monthOrder.indexOf(a) - monthOrder.indexOf(b);
-                        });
-                        
-                        return months.map((month, index) => {
-                          const data = netProfitData[month];
-                          return (
-                            <tr key={month} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                              <td className="sticky left-0 px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900 border-r border-gray-200 bg-inherit">
-                                {month}
-                              </td>
-                              <td className="px-6 py-3 whitespace-nowrap text-sm text-green-600 font-medium">
-                                €{data.revenue.toFixed(2)}
-                              </td>
-                              <td className="px-6 py-3 whitespace-nowrap text-sm text-red-600 font-medium">
-                                €{data.driverPayments.toFixed(2)}
-                              </td>
-                              <td className={`bg-gray-100 px-6 py-3 whitespace-nowrap text-sm font-bold ${
-                                data.netProfit >= 0 ? 'text-green-700' : 'text-red-700'
-                              }`}>
-                                €{data.netProfit.toFixed(2)}
-                              </td>
-                            </tr>
-                          );
-                        });
-                      })()}
-                      
-                      {/* Totals row */}
-                      <tr className="bg-green-50 border-t-2 border-gray-300">
-                        <td className="sticky left-0 bg-green-50 px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200">
+                    <tbody>
+                      {getSortedProfitMonths().map((month) => {
+                        const data = netProfitData[month];
+                        return (
+                          <tr
+                            key={month}
+                            className="transition-colors"
+                            style={{ borderBottom: '1px solid var(--dp-border)' }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--dp-surface-2)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <td style={{ ...tdBase, ...stickyLeft, background: 'inherit', fontWeight: 500, color: 'var(--dp-text)' }}>
+                              {month}
+                            </td>
+                            <td className="tabular-nums" style={{ ...tdBase, textAlign: 'right', color: 'var(--dp-success)', fontWeight: 500, fontFamily: 'var(--font-mono)' }}>
+                              €{data.revenue.toFixed(2)}
+                            </td>
+                            <td className="tabular-nums" style={{ ...tdBase, textAlign: 'right', color: 'var(--dp-text-secondary)', fontWeight: 500, fontFamily: 'var(--font-mono)' }}>
+                              €{data.driverPayments.toFixed(2)}
+                            </td>
+                            <td className="tabular-nums" style={{ ...tdBase, textAlign: 'right', fontWeight: 700, fontFamily: 'var(--font-mono)', background: 'var(--dp-surface-2)', color: data.netProfit >= 0 ? 'var(--dp-success)' : 'var(--dp-danger)' }}>
+                              €{data.netProfit.toFixed(2)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background: 'var(--dp-surface-2)', borderTop: '2px solid var(--dp-border)' }}>
+                        <td style={{ ...tdBase, ...stickyLeft, background: 'var(--dp-surface-2)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--dp-text)' }}>
                           TOTAL
                         </td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-green-700">
+                        <td className="tabular-nums" style={{ ...tdBase, textAlign: 'right', fontWeight: 700, color: 'var(--dp-success)', fontFamily: 'var(--font-mono)' }}>
                           €{Object.values(netProfitData).reduce((sum, data) => sum + data.revenue, 0).toFixed(2)}
                         </td>
-                        <td className="px-6 py-3 whitespace-nowrap text-sm font-bold text-red-700">
+                        <td className="tabular-nums" style={{ ...tdBase, textAlign: 'right', fontWeight: 700, color: 'var(--dp-text-secondary)', fontFamily: 'var(--font-mono)' }}>
                           €{Object.values(netProfitData).reduce((sum, data) => sum + data.driverPayments, 0).toFixed(2)}
                         </td>
-                        <td className={`bg-green-100 px-6 py-3 whitespace-nowrap text-sm font-bold ${
-                          Object.values(netProfitData).reduce((sum, data) => sum + data.netProfit, 0) >= 0 
-                            ? 'text-green-800' 
-                            : 'text-red-800'
-                        }`}>
-                          €{Object.values(netProfitData).reduce((sum, data) => sum + data.netProfit, 0).toFixed(2)}
-                        </td>
+                        {(() => {
+                          const total = Object.values(netProfitData).reduce((sum, data) => sum + data.netProfit, 0);
+                          return (
+                            <td className="tabular-nums" style={{ ...tdBase, textAlign: 'right', fontWeight: 700, fontFamily: 'var(--font-mono)', color: total >= 0 ? 'var(--dp-success)' : 'var(--dp-danger)' }}>
+                              €{total.toFixed(2)}
+                            </td>
+                          );
+                        })()}
                       </tr>
-                    </tbody>
+                    </tfoot>
                   </table>
                 ) : (
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="sticky left-0 bg-gray-50 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
-                        Company
-                      </th>
-                      {viewMode === 'monthly' ? (
-                        <>
-                          {Object.keys(monthlyData).map((month) => (
-                            <th
-                              key={month}
-                              scope="col"
-                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                              {month}
-                            </th>
-                          ))}
-                          <th scope="col" className="bg-gray-100 px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                            Total
-                          </th>
-                        </>
-                      ) : (
-                        <>
-                          {Object.keys(filteredDailyData).slice(0, 10).map((date) => (
-                            <th
-                              key={date}
-                              scope="col"
-                              className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                              {new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
-                            </th>
-                          ))}
-                          {Object.keys(filteredDailyData).length > 10 && (
-                            <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              ...
-                            </th>
-                          )}
-                          <th scope="col" className="bg-gray-100 px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                            Month Total
-                          </th>
-                        </>
-                      )}
-                    </tr>
-                  </thead>
-                  
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {companyData.map((company, index) => (
-                      <tr key={company.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="sticky left-0 px-6 py-3 whitespace-nowrap font-medium text-gray-900 border-r border-gray-200 bg-inherit">
-                          <div className="flex items-center">
-                            <Building2 className="w-4 h-4 text-gray-400 mr-2" />
-                            {company.name}
-                          </div>
-                        </td>
-                        
+                  /* ─── Monthly / Daily Company Table ─── */
+                  <table className="w-full" style={{ minWidth: 700 }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--dp-border)' }}>
+                        <th style={{ ...thBase, ...stickyLeft, background: 'var(--dp-surface-2)' }}>Company</th>
                         {viewMode === 'monthly' ? (
                           <>
-                            {Object.keys(monthlyData).map((month) => {
-                              const value = company.monthlyBreakdown[month] || 0;
-                              return (
-                                <td key={`${company.id}-${month}`} className="px-6 py-3 whitespace-nowrap text-sm text-gray-500">
-                                  {value > 0 ? `€${value.toFixed(2)}` : '—'}
-                                </td>
-                              );
-                            })}
-                            <td className="bg-gray-100 px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                              €{company.total.toFixed(2)}
+                            {Object.keys(monthlyData).map((month) => (
+                              <th key={month} style={{ ...thBase, textAlign: 'right' }}>{month}</th>
+                            ))}
+                            <th style={{ ...thBase, textAlign: 'right', fontWeight: 700, color: 'var(--dp-text)', background: 'var(--dp-surface-2)' }}>Total</th>
+                          </>
+                        ) : (
+                          <>
+                            {Object.keys(filteredDailyData).slice(0, 10).map((date) => (
+                              <th key={date} style={{ ...thBase, textAlign: 'right' }}>
+                                {new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                              </th>
+                            ))}
+                            {Object.keys(filteredDailyData).length > 10 && (
+                              <th style={{ ...thBase, textAlign: 'right' }}>...</th>
+                            )}
+                            <th style={{ ...thBase, textAlign: 'right', fontWeight: 700, color: 'var(--dp-text)', background: 'var(--dp-surface-2)' }}>Month Total</th>
+                          </>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {companyData.map((company) => (
+                        <tr
+                          key={company.id}
+                          className="transition-colors"
+                          style={{ borderBottom: '1px solid var(--dp-border)' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--dp-surface-2)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <td style={{ ...tdBase, ...stickyLeft, background: 'inherit', fontWeight: 500, color: 'var(--dp-text)' }}>
+                            <div className="flex items-center gap-2">
+                              <Building2 className="w-3.5 h-3.5" style={{ color: 'var(--dp-text-muted)' }} />
+                              {company.name}
+                            </div>
+                          </td>
+                          {viewMode === 'monthly' ? (
+                            <>
+                              {Object.keys(monthlyData).map((month) => {
+                                const value = company.monthlyBreakdown[month] || 0;
+                                return (
+                                  <td key={`${company.id}-${month}`} className="tabular-nums" style={{ ...tdBase, textAlign: 'right', color: value > 0 ? 'var(--dp-text)' : 'var(--dp-text-muted)', fontFamily: 'var(--font-mono)' }}>
+                                    {value > 0 ? `€${value.toFixed(2)}` : '—'}
+                                  </td>
+                                );
+                              })}
+                              <td className="tabular-nums" style={{ ...tdBase, textAlign: 'right', fontWeight: 600, color: 'var(--dp-text)', fontFamily: 'var(--font-mono)', background: 'var(--dp-surface-2)' }}>
+                                €{company.total.toFixed(2)}
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              {Object.keys(filteredDailyData).slice(0, 10).map((date) => {
+                                const value = company.dailyBreakdown[date] || 0;
+                                return (
+                                  <td key={`${company.id}-${date}`} className="tabular-nums" style={{ ...tdBase, textAlign: 'right', color: value > 0 ? 'var(--dp-text)' : 'var(--dp-text-muted)', fontFamily: 'var(--font-mono)' }}>
+                                    {value > 0 ? `€${value.toFixed(2)}` : '—'}
+                                  </td>
+                                );
+                              })}
+                              {Object.keys(filteredDailyData).length > 10 && (
+                                <td style={{ ...tdBase, textAlign: 'right', color: 'var(--dp-text-muted)' }}>...</td>
+                              )}
+                              <td className="tabular-nums" style={{ ...tdBase, textAlign: 'right', fontWeight: 600, color: 'var(--dp-text)', fontFamily: 'var(--font-mono)', background: 'var(--dp-surface-2)' }}>
+                                €{Object.keys(filteredDailyData).reduce((sum, date) => sum + (company.dailyBreakdown[date] || 0), 0).toFixed(2)}
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background: 'var(--dp-surface-2)', borderTop: '2px solid var(--dp-border)' }}>
+                        <td style={{ ...tdBase, ...stickyLeft, background: 'var(--dp-surface-2)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--dp-text)' }}>
+                          {viewMode === 'monthly' ? 'Monthly Total' : 'Daily Total'}
+                        </td>
+                        {viewMode === 'monthly' ? (
+                          <>
+                            {Object.keys(monthlyData).map((month) => (
+                              <td key={`total-${month}`} className="tabular-nums" style={{ ...tdBase, textAlign: 'right', fontWeight: 600, color: 'var(--dp-text)', fontFamily: 'var(--font-mono)' }}>
+                                €{monthlyData[month].total.toFixed(2)}
+                              </td>
+                            ))}
+                            <td className="tabular-nums" style={{ ...tdBase, textAlign: 'right', fontWeight: 700, color: 'var(--dp-text)', fontFamily: 'var(--font-mono)', background: 'var(--dp-surface-2)' }}>
+                              €{yearToDate.toFixed(2)}
                             </td>
                           </>
                         ) : (
                           <>
-                            {Object.keys(filteredDailyData).slice(0, 10).map((date) => {
-                              const value = company.dailyBreakdown[date] || 0;
-                              return (
-                                <td key={`${company.id}-${date}`} className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                  {value > 0 ? `€${value.toFixed(2)}` : '—'}
-                                </td>
-                              );
-                            })}
-                            {Object.keys(filteredDailyData).length > 10 && (
-                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                ...
+                            {Object.keys(filteredDailyData).slice(0, 10).map((date) => (
+                              <td key={`total-${date}`} className="tabular-nums" style={{ ...tdBase, textAlign: 'right', fontWeight: 600, color: 'var(--dp-text)', fontFamily: 'var(--font-mono)' }}>
+                                €{filteredDailyData[date].total.toFixed(2)}
                               </td>
+                            ))}
+                            {Object.keys(filteredDailyData).length > 10 && (
+                              <td style={{ ...tdBase, textAlign: 'right', fontWeight: 600, color: 'var(--dp-text-muted)' }}>...</td>
                             )}
-                            <td className="bg-gray-100 px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                              €{Object.keys(filteredDailyData).reduce((sum, date) => sum + (company.dailyBreakdown[date] || 0), 0).toFixed(2)}
+                            <td className="tabular-nums" style={{ ...tdBase, textAlign: 'right', fontWeight: 700, color: 'var(--dp-text)', fontFamily: 'var(--font-mono)', background: 'var(--dp-surface-2)' }}>
+                              €{Object.values(filteredDailyData).reduce((sum, day) => sum + day.total, 0).toFixed(2)}
                             </td>
                           </>
                         )}
                       </tr>
-                    ))}
-                  </tbody>
-                  
-                  <tfoot>
-                    <tr className="bg-green-50 border-t-2 border-gray-300">
-                      <th className="sticky left-0 bg-green-50 px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                        {viewMode === 'monthly' ? 'Monthly Total' : 'Daily Total'}
-                      </th>
-                      {viewMode === 'monthly' ? (
-                        <>
-                          {Object.keys(monthlyData).map((month) => (
-                            <th
-                              key={`total-${month}`}
-                              className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
-                            >
-                              €{monthlyData[month].total.toFixed(2)}
-                            </th>
-                          ))}
-                          <th className="bg-green-100 px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
-                            €{yearToDate.toFixed(2)}
-                          </th>
-                        </>
-                      ) : (
-                        <>
-                          {Object.keys(filteredDailyData).slice(0, 10).map((date) => (
-                            <th
-                              key={`total-${date}`}
-                              className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider"
-                            >
-                              €{filteredDailyData[date].total.toFixed(2)}
-                            </th>
-                          ))}
-                          {Object.keys(filteredDailyData).length > 10 && (
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                              ...
-                            </th>
-                          )}
-                          <th className="bg-green-100 px-6 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
-                            €{Object.values(filteredDailyData).reduce((sum, day) => sum + day.total, 0).toFixed(2)}
-                          </th>
-                        </>
-                      )}
-                    </tr>
-                  </tfoot>
-                </table>
+                    </tfoot>
+                  </table>
                 )}
               </div>
             </div>
 
             {/* Report Information */}
-            <div className="bg-white rounded-lg shadow-sm p-4">
-              <div className="flex items-start">
-                <FileText className="w-5 h-5 text-gray-400 mr-2 mt-0.5" />
-                {viewMode === 'drivers' ? (
-                  <div className="text-sm text-gray-600">
-                    <p className="mb-2">
-                      This report shows the monthly earnings breakdown for all drivers in {selectedYear} (EUR).
-                    </p>
-                    <ul className="list-disc list-inside space-y-1 ml-2 mb-2">
-                      <li>Only completed transfers are included in earnings calculations</li>
-                      <li>Driver fees are used when specified, otherwise the full project price</li>
-                      <li>All amounts are displayed in EUR</li>
-                      <li>Only drivers with earnings &gt; €0 are shown</li>
-                    </ul>
-                    <p>
-                      Total driver earnings for {selectedYear}: 
-                      <span className="font-medium text-blue-600 ml-1">
-                        €{driverEarningsData.reduce((sum, driver) => sum + driver.total, 0).toFixed(2)}
-                      </span>
-                    </p>
-                  </div>
-                ) : viewMode === 'profit' ? (
-                  <div className="text-sm text-gray-600">
-                    <p className="mb-2">
-                      This report shows the net profit analysis for {selectedYear}, calculated as:
-                    </p>
-                    <ul className="list-disc list-inside space-y-1 ml-2 mb-2">
-                      <li>Revenue from all projects (regardless of payment status)</li>
-                      <li>Minus: Payments made to drivers</li>
-                      <li>Equals: Net Profit</li>
-                    </ul>
-                    <p>
-                      Total net profit for {selectedYear}: 
-                      <span className={`font-medium ml-1 ${
-                        Object.values(netProfitData).reduce((sum, data) => sum + data.netProfit, 0) >= 0
-                          ? 'text-green-600'
-                          : 'text-red-600'
-                      }`}>
-                        €{Object.values(netProfitData).reduce((sum, data) => sum + data.netProfit, 0).toFixed(2)}
-                      </span>
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-600">
-                    <p className="mb-2">
-                      This report shows the financial breakdown of all projects by company and {viewMode === 'monthly' ? 'month' : 'day'} for {selectedYear}
-                      {viewMode === 'daily' && ` - ${new Date(0, selectedMonth - 1).toLocaleString('default', { month: 'long' })}`}.
-                    </p>
-                    <p>
-                      Total revenue for {viewMode === 'monthly' ? selectedYear : `${new Date(0, selectedMonth - 1).toLocaleString('default', { month: 'long' })} ${selectedYear}`}: 
-                      <span className="font-medium text-green-600 ml-1">
-                        €{viewMode === 'monthly' 
-                          ? yearToDate.toFixed(2) 
-                          : Object.values(filteredDailyData).reduce((sum, day) => sum + day.total, 0).toFixed(2)
-                        }
-                      </span>
-                    </p>
-                  </div>
-                )}
-              </div>
+            <div className="flex items-start gap-3 p-4" style={card}>
+              <FileText className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--dp-text-muted)' }} />
+              {viewMode === 'drivers' ? (
+                <div className="text-sm" style={{ color: 'var(--dp-text-secondary)', lineHeight: 1.5 }}>
+                  <p className="mb-2">
+                    This report shows the monthly earnings breakdown for all drivers in {selectedYear} (EUR).
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 ml-2 mb-2">
+                    <li>Only completed transfers are included in earnings calculations</li>
+                    <li>Driver fees are used when specified, otherwise the full project price</li>
+                    <li>All amounts are displayed in EUR</li>
+                    <li>Only drivers with earnings &gt; €0 are shown</li>
+                  </ul>
+                  <p>
+                    Total driver earnings for {selectedYear}: 
+                    <span className="font-medium ml-1 tabular-nums" style={{ color: 'var(--dp-accent)', fontFamily: 'var(--font-mono)' }}>
+                      €{driverEarningsData.reduce((sum, driver) => sum + driver.total, 0).toFixed(2)}
+                    </span>
+                  </p>
+                </div>
+              ) : viewMode === 'profit' ? (
+                <div className="text-sm" style={{ color: 'var(--dp-text-secondary)', lineHeight: 1.5 }}>
+                  <p className="mb-2">
+                    This report shows the net profit analysis for {selectedYear}, calculated as:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 ml-2 mb-2">
+                    <li>Revenue from all projects (regardless of payment status)</li>
+                    <li>Minus: Payments made to drivers</li>
+                    <li>Equals: Net Profit</li>
+                  </ul>
+                  <p>
+                    Total net profit for {selectedYear}: 
+                    <span className={`font-medium ml-1 tabular-nums`} style={{
+                      color: Object.values(netProfitData).reduce((sum, data) => sum + data.netProfit, 0) >= 0 ? 'var(--dp-success)' : 'var(--dp-danger)',
+                      fontFamily: 'var(--font-mono)',
+                    }}>
+                      €{Object.values(netProfitData).reduce((sum, data) => sum + data.netProfit, 0).toFixed(2)}
+                    </span>
+                  </p>
+                </div>
+              ) : (
+                <div className="text-sm" style={{ color: 'var(--dp-text-secondary)', lineHeight: 1.5 }}>
+                  <p className="mb-2">
+                    This report shows the financial breakdown of all projects by company and {viewMode === 'monthly' ? 'month' : 'day'} for {selectedYear}
+                    {viewMode === 'daily' && ` - ${new Date(0, selectedMonth - 1).toLocaleString('default', { month: 'long' })}`}.
+                  </p>
+                  <p>
+                    Total revenue for {viewMode === 'monthly' ? selectedYear : `${new Date(0, selectedMonth - 1).toLocaleString('default', { month: 'long' })} ${selectedYear}`}: 
+                    <span className="font-medium ml-1 tabular-nums" style={{ color: 'var(--dp-success)', fontFamily: 'var(--font-mono)' }}>
+                      €{viewMode === 'monthly' 
+                        ? yearToDate.toFixed(2) 
+                        : Object.values(filteredDailyData).reduce((sum, day) => sum + day.total, 0).toFixed(2)
+                      }
+                    </span>
+                  </p>
+                </div>
+              )}
             </div>
           </>
         )}
       </div>
-    </div>
+    </DispatchLayout>
   );
 }

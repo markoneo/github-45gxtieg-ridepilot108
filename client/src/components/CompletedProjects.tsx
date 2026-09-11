@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Check, MapPin, Users, ArrowLeft } from 'lucide-react';
+import { Check, MapPin, Users, ClipboardCheck } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
+import DispatchLayout from './dispatch/DispatchLayout';
 
 // Color palette for company themes
 const companyColorPalette = [
@@ -55,114 +56,17 @@ const getCompanyTheme = (companyName: string, companyId?: string) => {
   return 'green';
 };
 
-const getThemeClasses = (theme: string) => {
-  const themeClasses: Record<string, Record<string, string>> = {
-    blue: {
-      accent: 'bg-blue-500 hover:bg-blue-600',
-      text: 'text-blue-600',
-      border: 'border-blue-500 border-2',
-      light: 'bg-blue-50',
-      icon: 'text-blue-500',
-    },
-    green: {
-      accent: 'bg-green-500 hover:bg-green-600',
-      text: 'text-green-600',
-      border: 'border-green-500 border-2',
-      light: 'bg-green-50',
-      icon: 'text-green-500',
-    },
-    purple: {
-      accent: 'bg-purple-500 hover:bg-purple-600',
-      text: 'text-purple-600',
-      border: 'border-purple-500 border-2',
-      light: 'bg-purple-50',
-      icon: 'text-purple-500',
-    },
-    amber: {
-      accent: 'bg-amber-500 hover:bg-amber-600',
-      text: 'text-amber-600',
-      border: 'border-amber-500 border-2',
-      light: 'bg-amber-50',
-      icon: 'text-amber-500',
-    },
-    teal: {
-      accent: 'bg-teal-500 hover:bg-teal-600',
-      text: 'text-teal-600',
-      border: 'border-teal-500 border-2',
-      light: 'bg-teal-50',
-      icon: 'text-teal-500',
-    },
-    red: {
-      accent: 'bg-red-500 hover:bg-red-600',
-      text: 'text-red-600',
-      border: 'border-red-500 border-2',
-      light: 'bg-red-50',
-      icon: 'text-red-500',
-    },
-    indigo: {
-      accent: 'bg-indigo-500 hover:bg-indigo-600',
-      text: 'text-indigo-600',
-      border: 'border-indigo-500 border-2',
-      light: 'bg-indigo-50',
-      icon: 'text-indigo-500',
-    },
-    pink: {
-      accent: 'bg-pink-500 hover:bg-pink-600',
-      text: 'text-pink-600',
-      border: 'border-pink-500 border-2',
-      light: 'bg-pink-50',
-      icon: 'text-pink-500',
-    },
-    orange: {
-      accent: 'bg-orange-500 hover:bg-orange-600',
-      text: 'text-orange-600',
-      border: 'border-orange-500 border-2',
-      light: 'bg-orange-50',
-      icon: 'text-orange-500',
-    },
-    emerald: {
-      accent: 'bg-emerald-500 hover:bg-emerald-600',
-      text: 'text-emerald-600',
-      border: 'border-emerald-500 border-2',
-      light: 'bg-emerald-50',
-      icon: 'text-emerald-500',
-    },
-    viator: {
-      accent: 'bg-[#328E6E] hover:bg-[#2a7a5e]',
-      text: 'text-[#328E6E] font-semibold',
-      border: 'border-[#328E6E] border-2',
-      light: 'bg-green-50',
-      icon: 'text-[#328E6E]',
-    },
-    booking: {
-      accent: 'bg-[#3D365C] hover:bg-[#332d4d]',
-      text: 'text-[#3D365C] font-semibold',
-      border: 'border-[#3D365C] border-2',
-      light: 'bg-indigo-50',
-      icon: 'text-[#3D365C]',
-    },
-    rideconnect: {
-      accent: 'bg-[#BF3131] hover:bg-[#a62a2a]',
-      text: 'text-[#BF3131] font-semibold',
-      border: 'border-[#BF3131] border-2',
-      light: 'bg-red-50',
-      icon: 'text-[#BF3131]',
-    }
-  };
-  
-  // Check if the theme is a hex color
-  if (theme.startsWith('#')) {
-    return {
-      accent: `bg-[${theme}] hover:bg-[${theme}]/90`,
-      text: `text-[${theme}] font-semibold`,
-      border: `border-[${theme}] border-2`,
-      light: 'bg-gray-50',
-      icon: `text-[${theme}]`,
-    };
-  }
-  
-  return themeClasses[theme] || themeClasses.green;
+const COLOR_MAP: Record<string, string> = {
+  blue: '#3b82f6', green: '#22c55e', purple: '#a855f7', amber: '#f59e0b',
+  teal: '#14b8a6', red: '#ef4444', indigo: '#6366f1', pink: '#ec4899',
+  orange: '#f97316', emerald: '#10b981',
+  viator: '#328E6E', booking: '#3D365C', rideconnect: '#BF3131',
 };
+
+function resolveColor(theme: string): string {
+  if (theme.startsWith('#')) return theme;
+  return COLOR_MAP[theme] || '#6b7280';
+}
 
 export default function CompletedProjects() {
   const { projects, companies, drivers, carTypes } = useData();
@@ -219,110 +123,228 @@ export default function CompletedProjects() {
   }, [projects]);
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
-        <div className="flex items-center mb-4 sm:mb-6">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center text-gray-600 hover:text-gray-900"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
-            <span className="text-sm sm:text-base">Back to Dashboard</span>
-          </button>
-        </div>
-        
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">Completed Projects</h1>
-        
+    <DispatchLayout pageTitle="Completed Projects">
+      <div style={{ maxWidth: 1100 }} className="mx-auto">
         {Object.keys(groupedProjects).length === 0 ? (
-          <div className="text-center py-8 bg-white rounded-lg shadow-md">
-            <p className="text-gray-500 text-lg">No completed projects yet.</p>
+          <div
+            className="text-center py-16"
+            style={{
+              background: 'var(--dp-surface)',
+              border: '1px solid var(--dp-border)',
+              borderRadius: 'var(--dp-radius)',
+            }}
+          >
+            <ClipboardCheck className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--dp-text-muted)' }} />
+            <p className="text-base" style={{ color: 'var(--dp-text-muted)' }}>No completed projects yet.</p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-1">
             {Object.entries(groupedProjects).map(([dateKey, dateProjects]) => (
-              <div key={dateKey}>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3">
-                  {new Date(dateKey).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'short'
-                  })}
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {dateProjects.map((project) => {
-                    // Get color theme for this company
+              <React.Fragment key={dateKey}>
+                {/* Sticky date header */}
+                <div
+                  className="sticky top-0 z-10 px-3 py-2 text-xs font-semibold flex items-center justify-between"
+                  style={{
+                    background: 'var(--dp-surface-2)',
+                    color: 'var(--dp-text-secondary)',
+                    borderBottom: '1px solid var(--dp-border)',
+                  }}
+                >
+                  <span style={{ color: 'var(--dp-text)' }}>
+                    {new Date(dateKey).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'short'
+                    })}
+                  </span>
+                  <span style={{ color: 'var(--dp-text-muted)' }}>
+                    {dateProjects.length} ride{dateProjects.length !== 1 ? 's' : ''} ·{' '}
+                    <span className="font-heading tabular-nums">
+                      €{Math.round(dateProjects.reduce((s: number, p: any) => s + p.price, 0))}
+                    </span>
+                  </span>
+                </div>
+
+                {/* Project cards */}
+                <div className="space-y-2 py-2">
+                  {dateProjects.map((project: any) => {
                     const colorTheme = getCompanyColorTheme(project.company);
-                    const themeClasses = getThemeClasses(colorTheme);
-                    
+                    const dotColor = resolveColor(colorTheme);
+                    const pickup = splitAddress(project.pickupLocation);
+                    const dropoff = splitAddress(project.dropoffLocation);
+
                     return (
-                      <div key={project.id} className={`bg-white rounded-lg shadow-sm p-4 ${themeClasses.border}`}>
-                        <div className="flex items-center justify-end mb-2">
-                          <span className="flex items-center text-green-600 text-xs">
-                            <Check className="w-4 h-4 mr-1" />
-                            Completed
-                          </span>
-                        </div>
+                      <div
+                        key={project.id}
+                        className="relative overflow-hidden"
+                        style={{
+                          background: 'var(--dp-surface)',
+                          border: '1px solid var(--dp-border)',
+                          borderRadius: 'var(--dp-radius)',
+                        }}
+                      >
+                        {/* Thin left accent bar */}
+                        <div
+                          className="absolute left-0 top-0 bottom-0"
+                          style={{ width: 3, background: dotColor }}
+                        />
 
-                        <div className="flex justify-between items-start">
+                        {/* Desktop row */}
+                        <div className="hidden md:grid md:grid-cols-[70px_1fr_1fr_140px_90px] gap-4 p-4 pl-5 items-start">
+                          {/* Time */}
                           <div>
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className="text-base font-semibold">
-                                {new Date(project.date).toLocaleDateString('en-US', { 
-                                  day: 'numeric', 
-                                  month: 'short'
-                                })}
+                            <span className="font-heading text-[22px] leading-none tabular-nums" style={{ color: 'var(--dp-text)' }}>
+                              {project.time.substring(0, 5)}
+                            </span>
+                            <div className="mt-1">
+                              <span
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded"
+                                style={{ background: 'var(--dp-success-bg)', color: 'var(--dp-success)' }}
+                              >
+                                <Check className="w-3 h-3" />
+                                Completed
                               </span>
-                              <span className="text-base font-semibold">{project.time.substring(0, 5)}</span>
                             </div>
-                            <div className={`text-sm ${themeClasses.text} mb-1`}>
-                              {getCompanyName(project.company)}
-                            </div>
-                            <div className="text-sm text-gray-600 mb-3">{project.clientName}</div>
                           </div>
+
+                          {/* Route */}
+                          <div className="flex gap-3 min-w-0">
+                            <RouteLine />
+                            <div className="flex flex-col gap-3 min-w-0">
+                              <AddressBlock place={pickup.place} rest={pickup.rest} />
+                              <AddressBlock place={dropoff.place} rest={dropoff.rest} />
+                            </div>
+                          </div>
+
+                          {/* Client & meta */}
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold truncate" style={{ color: 'var(--dp-text)' }}>
+                              {project.clientName || 'Anonymous'}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 text-xs flex-wrap" style={{ color: 'var(--dp-text-muted)' }}>
+                              <span className="inline-flex items-center gap-1">
+                                <Users className="w-3 h-3" />
+                                {project.passengers} pax
+                              </span>
+                              <span>{getCarTypeName(project.carType)}</span>
+                              <span className="inline-flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dotColor }} />
+                                {getCompanyName(project.company)}
+                              </span>
+                            </div>
+                            {project.bookingId && (
+                              <div className="text-[11px] mt-1" style={{ color: 'var(--dp-text-muted)', fontFamily: 'var(--font-mono)' }}>
+                                #{project.bookingId}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Driver */}
+                          <div className="text-sm" style={{ color: 'var(--dp-text-secondary)' }}>
+                            {getDriverName(project.driver)}
+                          </div>
+
+                          {/* Price */}
                           <div className="text-right">
-                            <div className="text-base font-bold text-blue-600">€{project.price.toFixed(2)}</div>
-                            <div className="text-xs text-gray-500 mt-1">#{project.bookingId}</div>
+                            <span className="font-heading text-[17px] tabular-nums" style={{ color: 'var(--dp-text)' }}>
+                              €{project.price.toFixed(2)}
+                            </span>
                           </div>
                         </div>
 
-                        <div className="space-y-2 mt-3 text-sm">
-                          <div className="flex items-start space-x-1">
-                            <MapPin className={`w-4 h-4 ${themeClasses.icon} mt-1`} />
-                            <div>
-                              <div className="font-medium text-xs">Pick-up</div>
-                              <div className="text-gray-600">{project.pickupLocation}</div>
+                        {/* Mobile stacked */}
+                        <div className="md:hidden p-3 pl-4 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-baseline gap-2">
+                              <span className="font-heading text-[20px] leading-none tabular-nums" style={{ color: 'var(--dp-text)' }}>
+                                {project.time.substring(0, 5)}
+                              </span>
+                              <span
+                                className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                                style={{ background: 'var(--dp-success-bg)', color: 'var(--dp-success)' }}
+                              >
+                                <Check className="w-2.5 h-2.5" /> Done
+                              </span>
                             </div>
+                            <span className="font-heading text-[16px] tabular-nums" style={{ color: 'var(--dp-text)' }}>
+                              €{project.price.toFixed(2)}
+                            </span>
                           </div>
-                          <div className="flex items-start space-x-1">
-                            <MapPin className={`w-4 h-4 ${themeClasses.icon} mt-1`} />
-                            <div>
-                              <div className="font-medium text-xs">Drop-off</div>
-                              <div className="text-gray-600">{project.dropoffLocation}</div>
-                            </div>
-                          </div>
-                        </div>
 
-                        <div className="mt-3 flex items-center justify-between text-xs">
-                          <div className="flex items-center space-x-2">
-                            <div className="flex items-center space-x-1">
-                              <Users className="w-3 h-3 text-gray-400" />
-                              <span className="text-gray-600">{project.passengers}</span>
+                          <div className="flex gap-2">
+                            <RouteLine small />
+                            <div className="flex flex-col gap-2 min-w-0">
+                              <AddressBlock place={pickup.place} rest={pickup.rest} small />
+                              <AddressBlock place={dropoff.place} rest={dropoff.rest} small />
                             </div>
-                            <div className="text-gray-600">{getCarTypeName(project.carType)}</div>
                           </div>
-                          <div className="text-right">
-                            <div className="font-medium">{getDriverName(project.driver)}</div>
+
+                          <div className="flex items-center justify-between pt-1.5" style={{ borderTop: '1px solid var(--dp-border)' }}>
+                            <div className="min-w-0">
+                              <span className="text-sm font-semibold" style={{ color: 'var(--dp-text)' }}>
+                                {project.clientName || 'Anonymous'}
+                              </span>
+                              <div className="text-xs mt-0.5" style={{ color: 'var(--dp-text-muted)' }}>
+                                {project.passengers} pax · {getCarTypeName(project.carType)}
+                                <span className="inline-flex items-center gap-1 ml-1">
+                                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: dotColor }} />
+                                  {getCompanyName(project.company)}
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-xs flex-shrink-0" style={{ color: 'var(--dp-text-secondary)' }}>
+                              {getDriverName(project.driver)}
+                            </span>
                           </div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              </div>
+              </React.Fragment>
             ))}
           </div>
         )}
       </div>
+    </DispatchLayout>
+  );
+}
+
+function RouteLine({ small }: { small?: boolean }) {
+  const h = small ? 'h-10' : 'h-12';
+  return (
+    <div className={`flex flex-col items-center flex-shrink-0 ${h} justify-between py-0.5`} style={{ width: 12 }}>
+      <span
+        className="w-2.5 h-2.5 rounded-full border-2 flex-shrink-0"
+        style={{ borderColor: 'var(--dp-accent)', background: 'transparent' }}
+      />
+      <span className="flex-1 w-px border-l border-dashed my-0.5" style={{ borderColor: 'var(--dp-border-strong)' }} />
+      <span
+        className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+        style={{ background: 'var(--dp-accent)' }}
+      />
     </div>
   );
+}
+
+function AddressBlock({ place, rest, small }: { place: string; rest: string; small?: boolean }) {
+  return (
+    <div className="min-w-0">
+      <div className={`${small ? 'text-xs' : 'text-sm'} font-semibold truncate`} style={{ color: 'var(--dp-text)' }}>
+        {place || '–'}
+      </div>
+      {rest && (
+        <div className={`${small ? 'text-[10px]' : 'text-xs'} leading-tight`} style={{ color: 'var(--dp-text-muted)', wordBreak: 'break-word' }}>
+          {rest}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function splitAddress(addr: string): { place: string; rest: string } {
+  if (!addr) return { place: '', rest: '' };
+  const commaIdx = addr.indexOf(',');
+  if (commaIdx === -1) return { place: addr, rest: '' };
+  return { place: addr.slice(0, commaIdx), rest: addr.slice(commaIdx + 1).trim() };
 }

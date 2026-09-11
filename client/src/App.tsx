@@ -95,9 +95,9 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {location.pathname !== '/' && !location.pathname.includes('/driver') && !location.pathname.includes('/admin') && !location.pathname.includes('/dashboard') && !location.pathname.includes('/settings') && <Navbar />}
+      {location.pathname !== '/' && !location.pathname.includes('/driver') && !location.pathname.includes('/admin') && !location.pathname.includes('/dashboard') && !location.pathname.includes('/settings') && !location.pathname.includes('/completed-projects') && !location.pathname.includes('/statistics') && !location.pathname.includes('/financial-report') && <Navbar />}
       
-      <main className={`flex-grow ${location.pathname !== '/' && !location.pathname.includes('/driver') && !location.pathname.includes('/admin') && !location.pathname.includes('/dashboard') && !location.pathname.includes('/settings') ? 'pt-16' : ''}`}>
+      <main className={`flex-grow ${location.pathname !== '/' && !location.pathname.includes('/driver') && !location.pathname.includes('/admin') && !location.pathname.includes('/dashboard') && !location.pathname.includes('/settings') && !location.pathname.includes('/completed-projects') && !location.pathname.includes('/statistics') && !location.pathname.includes('/financial-report') ? 'pt-16' : ''}`}>
         <ErrorBoundary>
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
