@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Car, Calendar, Users, CreditCard, BarChart2, FileText, Settings,
-  LogOut, Search, Plus, RefreshCw, Bell, X, Menu, ChevronDown, Bot
+  LogOut, Search, Plus, RefreshCw, Bell, X, Menu, ChevronDown, Bot,
+  Gauge, Building2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
@@ -43,7 +44,15 @@ const NAV_ITEMS = [
   { id: 'statistics', label: 'Statistics', icon: BarChart2, path: '/statistics' },
   { id: 'reports', label: 'Reports', icon: FileText, path: '/financial-report' },
   { id: 'ai-assistant', label: 'AI Assistant', icon: Bot, path: '/ai-assistant' },
-  { id: 'settings', label: 'Settings', icon: Settings, path: '/settings/general' },
+];
+
+const SETTINGS_SUB_ITEMS = [
+  { id: 'settings-capacity', label: 'Project Capacity', icon: Gauge, path: '/settings/general' },
+  { id: 'settings-companies', label: 'Companies', icon: Building2, path: '/settings/companies' },
+  { id: 'settings-car-types', label: 'Car Types', icon: Car, path: '/settings/car-types' },
+  { id: 'settings-drivers', label: 'Drivers', icon: Users, path: '/settings/drivers' },
+  { id: 'settings-payments', label: 'Payments', icon: CreditCard, path: '/settings/payments' },
+  { id: 'settings-notifications', label: 'Notifications', icon: Bell, path: '/settings/notifications' },
 ];
 
 export default function DispatchLayout({
@@ -61,6 +70,7 @@ export default function DispatchLayout({
   const location = useLocation();
   const { logout, currentUser } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(location.pathname.startsWith('/settings'));
   const [now, setNow] = useState(new Date());
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -160,6 +170,65 @@ export default function DispatchLayout({
                 </button>
               );
             })}
+
+            {/* Settings accordion */}
+            {(() => {
+              const isAnySettingsActive = location.pathname.startsWith('/settings');
+              return (
+                <div>
+                  <button
+                    onClick={() => setSettingsOpen(prev => !prev)}
+                    aria-expanded={settingsOpen}
+                    aria-controls="settings-submenu"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                    style={{
+                      background: isAnySettingsActive && !settingsOpen ? 'var(--dp-accent-soft)' : 'transparent',
+                      color: isAnySettingsActive ? 'var(--dp-accent)' : 'var(--dp-text-secondary)',
+                    }}
+                  >
+                    <Settings className="w-[18px] h-[18px]" />
+                    <span>Settings</span>
+                    <ChevronDown
+                      className="w-4 h-4 ml-auto transition-transform duration-200"
+                      style={{
+                        transform: settingsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                        color: 'var(--dp-text-muted)',
+                      }}
+                    />
+                  </button>
+                  <div
+                    id="settings-submenu"
+                    className="overflow-hidden transition-all duration-200"
+                    style={{
+                      maxHeight: settingsOpen ? `${SETTINGS_SUB_ITEMS.length * 44}px` : '0px',
+                      opacity: settingsOpen ? 1 : 0,
+                    }}
+                  >
+                    <div className="relative ml-[15px] pl-[18px] mt-0.5 space-y-0.5" style={{ borderLeft: '1px solid var(--dp-border)' }}>
+                      {SETTINGS_SUB_ITEMS.map((sub) => {
+                        const SubIcon = sub.icon;
+                        const isSubActive = location.pathname.startsWith(sub.path);
+                        return (
+                          <button
+                            key={sub.id}
+                            onClick={() => { navigate(sub.path); setSidebarOpen(false); }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors"
+                            style={{
+                              minHeight: 40,
+                              background: isSubActive ? 'var(--dp-accent-soft)' : 'transparent',
+                              color: isSubActive ? 'var(--dp-accent)' : 'var(--dp-text-secondary)',
+                            }}
+                          >
+                            <SubIcon className="w-4 h-4" />
+                            <span>{sub.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Channels */}
