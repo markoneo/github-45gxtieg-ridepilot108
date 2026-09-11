@@ -44,28 +44,28 @@ const DriverProjectCard = ({ project, companyName, carTypeName }: {
     return time.substring(0, 5);
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusStyle = (status: string): React.CSSProperties => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'accepted': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'started': return 'bg-green-100 text-green-800 border-green-200';
-      case 'declined': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'pending': return { background: 'var(--dp-warning-bg)', color: 'var(--dp-warning)', border: '1px solid var(--dp-warning-bg)' };
+      case 'accepted': return { background: 'var(--dp-accent-soft)', color: 'var(--dp-accent)', border: '1px solid var(--dp-accent-soft)' };
+      case 'started': return { background: 'var(--dp-success-bg)', color: 'var(--dp-success)', border: '1px solid var(--dp-success-bg)' };
+      case 'declined': return { background: 'var(--dp-charge-bg)', color: 'var(--dp-danger)', border: '1px solid var(--dp-charge-bg)' };
+      default: return { background: 'var(--dp-surface-2)', color: 'var(--dp-text-secondary)', border: '1px solid var(--dp-border)' };
     }
   };
 
-  const getUrgency = () => {
+  const getUrgencyColor = (): string => {
     const projectDateTime = new Date(`${project.date}T${project.time}`);
     const now = new Date();
     const diffHours = (projectDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-    
-    if (diffHours < 0) return { type: 'past', color: 'bg-gray-200' };
-    if (diffHours <= 2) return { type: 'urgent', color: 'bg-red-500' };
-    if (diffHours <= 24) return { type: 'soon', color: 'bg-orange-500' };
-    return { type: 'scheduled', color: 'bg-blue-500' };
+
+    if (diffHours < 0) return 'var(--dp-border-strong)';
+    if (diffHours <= 2) return 'var(--dp-danger)';
+    if (diffHours <= 24) return 'var(--dp-warning)';
+    return 'var(--dp-accent)';
   };
 
-  const urgency = getUrgency();
+  const urgencyColor = getUrgencyColor();
   const displayPrice = project.driver_fee && project.driver_fee > 0 ? project.driver_fee : project.price;
 
   return (
@@ -74,114 +74,128 @@ const DriverProjectCard = ({ project, companyName, carTypeName }: {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow duration-300"
+      className="overflow-hidden transition-shadow duration-300"
+      style={{
+        background: 'var(--dp-surface)',
+        borderRadius: 'var(--dp-radius)',
+        border: '1px solid var(--dp-border)',
+        borderTop: `3px solid ${urgencyColor}`,
+      }}
     >
-      {/* Header with urgency indicator */}
-      <div className={`h-2 ${urgency.color}`}></div>
-      
-      <div className="p-6">
+      <div className="p-5">
         {/* Trip Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-100 p-3 rounded-xl">
-              <Car className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">{project.client_name}</h3>
-              <p className="text-sm text-gray-600 flex items-center">
-                <Building2 className="w-4 h-4 mr-1" />
-                {companyName}
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <Car className="w-5 h-5 shrink-0" style={{ color: 'var(--dp-text-muted)' }} />
+            <div className="min-w-0">
+              <h3 className="text-lg font-semibold truncate" style={{ color: 'var(--dp-text)' }}>{project.client_name}</h3>
+              <p className="text-sm flex items-center gap-1" style={{ color: 'var(--dp-text-muted)' }}>
+                <Building2 className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{companyName}</span>
               </p>
             </div>
           </div>
-          
-          <div className="text-right">
-            <div className="text-2xl font-bold text-green-600">
+
+          <div className="text-right shrink-0">
+            <div className="text-xl font-bold tabular-nums" style={{ color: 'var(--dp-success)' }}>
               €{displayPrice.toFixed(2)}
             </div>
           </div>
         </div>
 
         {/* Date and Time */}
-        <div className="flex items-center justify-between mb-4 p-4 bg-gray-50 rounded-xl">
-          <div className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5 text-gray-500" />
-            <span className="font-medium">{formatDate(project.date)}</span>
+        <div
+          className="flex items-center justify-between mb-4 px-4 py-3"
+          style={{ background: 'var(--dp-surface-2)', borderRadius: 'var(--dp-radius)' }}
+        >
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
+            <span className="text-sm font-medium" style={{ color: 'var(--dp-text)' }}>{formatDate(project.date)}</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <Clock className="w-5 h-5 text-gray-500" />
-            <span className="font-bold text-lg">{formatTime(project.time)}</span>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
+            <span className="text-base font-bold tabular-nums" style={{ color: 'var(--dp-text)' }}>{formatTime(project.time)}</span>
           </div>
         </div>
 
         {/* Locations */}
         <div className="space-y-3 mb-4">
-          <div className="flex items-start space-x-3">
-            <div className="bg-green-100 p-2 rounded-lg mt-1">
-              <MapPin className="w-4 h-4 text-green-600" />
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 rounded-md mt-0.5 shrink-0" style={{ background: 'var(--dp-success-bg)' }}>
+              <MapPin className="w-4 h-4" style={{ color: 'var(--dp-success)' }} />
             </div>
-            <div className="flex-1">
-              <p className="text-xs font-medium text-green-600 uppercase tracking-wider">Pickup</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--dp-success)' }}>Pickup</p>
               <button
                 onClick={() => {
                   const pickupUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(project.pickup_location)}`;
                   window.open(pickupUrl, '_blank');
                 }}
-                className="text-sm font-medium text-blue-600 hover:text-blue-800 leading-relaxed text-left underline decoration-dotted hover:decoration-solid transition-all duration-200"
+                className="text-sm font-medium leading-relaxed text-left underline decoration-dotted hover:decoration-solid transition-all duration-200"
+                style={{ color: 'var(--dp-accent)' }}
                 title="Open in Google Maps"
               >
                 {project.pickup_location}
               </button>
             </div>
           </div>
-          
-          <div className="flex items-start space-x-3">
-            <div className="bg-red-100 p-2 rounded-lg mt-1">
-              <MapPin className="w-4 h-4 text-red-600" />
+
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 rounded-md mt-0.5 shrink-0" style={{ background: 'var(--dp-charge-bg)' }}>
+              <MapPin className="w-4 h-4" style={{ color: 'var(--dp-charge)' }} />
             </div>
-            <div className="flex-1">
-              <p className="text-xs font-medium text-red-600 uppercase tracking-wider">Dropoff</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--dp-charge)' }}>Dropoff</p>
               <button
                 onClick={() => {
                   const dropoffUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(project.dropoff_location)}`;
                   window.open(dropoffUrl, '_blank');
                 }}
-                className="text-sm font-medium text-blue-600 hover:text-blue-800 leading-relaxed text-left underline decoration-dotted hover:decoration-solid transition-all duration-200"
+                className="text-sm font-medium leading-relaxed text-left underline decoration-dotted hover:decoration-solid transition-all duration-200"
+                style={{ color: 'var(--dp-accent)' }}
                 title="Open in Google Maps"
               >
                 {project.dropoff_location}
               </button>
             </div>
           </div>
-          
+
           {/* Route Navigation Button */}
-          <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="pt-3" style={{ borderTop: '1px solid var(--dp-border)' }}>
             <button
               onClick={() => {
                 const routeUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(project.pickup_location)}&destination=${encodeURIComponent(project.dropoff_location)}`;
                 window.open(routeUrl, '_blank');
               }}
-              className="w-full flex items-center justify-center space-x-2 bg-blue-50 text-blue-700 py-2 px-4 rounded-lg hover:bg-blue-100 transition-colors duration-200"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium transition-colors duration-200"
+              style={{
+                background: 'var(--dp-accent-soft)',
+                color: 'var(--dp-accent)',
+                borderRadius: 'var(--dp-radius)',
+              }}
               title="Get directions from pickup to dropoff"
             >
               <MapPin className="w-4 h-4" />
-              <span className="text-sm font-medium">Get Directions</span>
+              <span>Get Directions</span>
             </button>
           </div>
-            </div>
-          </div>
+        </div>
 
         {/* Trip Details */}
-        <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-blue-50 rounded-xl">
-          <div className="flex items-center space-x-2">
-            <Users className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-medium">{project.passengers} passenger{project.passengers !== 1 ? 's' : ''}</span>
+        <div
+          className="grid grid-cols-2 gap-3 mb-4 p-4"
+          style={{ background: 'var(--dp-surface-2)', borderRadius: 'var(--dp-radius)' }}
+        >
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
+            <span className="text-sm font-medium" style={{ color: 'var(--dp-text-secondary)' }}>{project.passengers} passenger{project.passengers !== 1 ? 's' : ''}</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <Phone className="w-4 h-4 text-blue-600" />
-            <a 
+          <div className="flex items-center gap-2">
+            <Phone className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
+            <a
               href={`tel:${project.client_phone}`}
-              className="text-sm font-medium text-blue-600 hover:text-blue-800"
+              className="text-sm font-medium hover:opacity-80"
+              style={{ color: 'var(--dp-accent)' }}
             >
               Call Client
             </a>
@@ -192,22 +206,24 @@ const DriverProjectCard = ({ project, companyName, carTypeName }: {
                   setCopiedId(project.id);
                   setTimeout(() => setCopiedId(null), 2000);
                 }}
-                className="p-1 rounded hover:bg-blue-100 transition-colors text-blue-500 hover:text-blue-700"
+                className="p-1 rounded transition-colors"
+                style={{ color: 'var(--dp-text-muted)' }}
                 title="Copy contact number"
               >
-                {copiedId === project.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                {copiedId === project.id ? <Check className="w-3.5 h-3.5" style={{ color: 'var(--dp-success)' }} /> : <Copy className="w-3.5 h-3.5" />}
               </button>
             )}
           </div>
-          <div className="flex items-center space-x-2">
-            <Car className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-medium">{carTypeName}</span>
+          <div className="flex items-center gap-2">
+            <Car className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
+            <span className="text-sm font-medium" style={{ color: 'var(--dp-text-secondary)' }}>{carTypeName}</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <DollarSign className="w-4 h-4 text-blue-600" />
-            <span className={`text-sm font-medium ${
-              project.payment_status === 'paid' ? 'text-green-600' : 'text-orange-600'
-            }`}>
+          <div className="flex items-center gap-2">
+            <DollarSign className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
+            <span
+              className="text-sm font-medium"
+              style={{ color: project.payment_status === 'paid' ? 'var(--dp-success)' : 'var(--dp-charge)' }}
+            >
               {project.payment_status === 'paid' ? 'Already Paid' : 'Charge the Client'}
             </span>
           </div>
@@ -215,7 +231,10 @@ const DriverProjectCard = ({ project, companyName, carTypeName }: {
 
         {/* Status */}
         <div className="mb-4">
-          <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(project.acceptance_status)}`}>
+          <span
+            className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+            style={getStatusStyle(project.acceptance_status)}
+          >
             {project.acceptance_status === 'pending' && <Clock className="w-4 h-4 mr-1" />}
             {project.acceptance_status === 'accepted' && <CheckCircle className="w-4 h-4 mr-1" />}
             {project.acceptance_status === 'started' && <PlayCircle className="w-4 h-4 mr-1" />}
@@ -226,11 +245,18 @@ const DriverProjectCard = ({ project, companyName, carTypeName }: {
 
         {/* Description */}
         {project.description && (
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
-            <p className="text-xs font-medium text-yellow-700 uppercase tracking-wider mb-1">
+          <div
+            className="mb-4 p-3"
+            style={{
+              background: 'var(--dp-warning-bg)',
+              border: '1px solid var(--dp-warning-bg)',
+              borderRadius: 'var(--dp-radius)',
+            }}
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--dp-warning)' }}>
               Special Instructions
             </p>
-            <p className="text-sm text-yellow-800">{project.description}</p>
+            <p className="text-sm" style={{ color: 'var(--dp-text)' }}>{project.description}</p>
           </div>
         )}
 
@@ -241,7 +267,8 @@ const DriverProjectCard = ({ project, companyName, carTypeName }: {
               <button
                 onClick={() => handleStatusUpdate('accepted')}
                 disabled={updating}
-                className="flex items-center justify-center space-x-2 bg-green-500 text-white py-3 px-4 rounded-xl font-medium hover:bg-green-600 disabled:opacity-50 transition-colors"
+                className="flex items-center justify-center gap-2 py-3 px-4 font-medium text-white disabled:opacity-50 transition-colors"
+                style={{ background: 'var(--dp-success)', borderRadius: 'var(--dp-radius)' }}
               >
                 <CheckCircle className="w-5 h-5" />
                 <span>{updating ? 'Accepting...' : 'Accept Trip'}</span>
@@ -249,19 +276,21 @@ const DriverProjectCard = ({ project, companyName, carTypeName }: {
               <button
                 onClick={() => handleStatusUpdate('declined')}
                 disabled={updating}
-                className="flex items-center justify-center space-x-2 bg-red-500 text-white py-3 px-4 rounded-xl font-medium hover:bg-red-600 disabled:opacity-50 transition-colors"
+                className="flex items-center justify-center gap-2 py-3 px-4 font-medium text-white disabled:opacity-50 transition-colors"
+                style={{ background: 'var(--dp-danger)', borderRadius: 'var(--dp-radius)' }}
               >
                 <XCircle className="w-5 h-5" />
                 <span>{updating ? 'Declining...' : 'Decline'}</span>
               </button>
             </div>
           )}
-          
+
           {project.acceptance_status === 'accepted' && (
             <button
               onClick={() => handleStatusUpdate('started')}
               disabled={updating}
-              className="flex items-center justify-center space-x-2 bg-blue-500 text-white py-3 px-4 rounded-xl font-medium hover:bg-blue-600 disabled:opacity-50 transition-colors"
+              className="flex items-center justify-center gap-2 py-3 px-4 font-medium text-white disabled:opacity-50 transition-colors"
+              style={{ background: 'var(--dp-accent)', borderRadius: 'var(--dp-radius)' }}
             >
               <PlayCircle className="w-5 h-5" />
               <span>{updating ? 'Starting...' : 'Start Trip'}</span>
@@ -272,21 +301,28 @@ const DriverProjectCard = ({ project, companyName, carTypeName }: {
             <button
               onClick={() => handleStatusUpdate('completed')}
               disabled={updating}
-              className="flex items-center justify-center space-x-2 bg-green-500 text-white py-3 px-4 rounded-xl font-medium hover:bg-green-600 disabled:opacity-50 transition-colors"
+              className="flex items-center justify-center gap-2 py-3 px-4 font-medium text-white disabled:opacity-50 transition-colors"
+              style={{ background: 'var(--dp-success)', borderRadius: 'var(--dp-radius)' }}
             >
               <CheckCircle2 className="w-5 h-5" />
               <span>{updating ? 'Completing...' : 'Complete Trip'}</span>
             </button>
           )}
           {project.acceptance_status === 'completed' && (
-            <div className="flex items-center justify-center space-x-2 bg-blue-100 text-blue-800 py-3 px-4 rounded-xl font-medium">
+            <div
+              className="flex items-center justify-center gap-2 py-3 px-4 font-medium"
+              style={{ background: 'var(--dp-success-bg)', color: 'var(--dp-success)', borderRadius: 'var(--dp-radius)' }}
+            >
               <CheckCircle2 className="w-5 h-5" />
               <span>Trip Completed</span>
             </div>
           )}
 
           {project.acceptance_status === 'declined' && (
-            <div className="flex items-center justify-center space-x-2 bg-red-100 text-red-800 py-3 px-4 rounded-xl font-medium">
+            <div
+              className="flex items-center justify-center gap-2 py-3 px-4 font-medium"
+              style={{ background: 'var(--dp-charge-bg)', color: 'var(--dp-danger)', borderRadius: 'var(--dp-radius)' }}
+            >
               <XCircle className="w-5 h-5" />
               <span>Trip Declined</span>
             </div>
@@ -295,12 +331,13 @@ const DriverProjectCard = ({ project, companyName, carTypeName }: {
 
         {/* Booking ID */}
         {project.booking_id && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500">
-              Booking Reference: <span className="font-mono">{project.booking_id}</span>
+          <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--dp-border)' }}>
+            <p className="text-xs font-mono" style={{ color: 'var(--dp-text-muted)' }}>
+              Booking Reference: <span>{project.booking_id}</span>
             </p>
           </div>
         )}
+      </div>
     </motion.div>
   );
 };
@@ -496,11 +533,11 @@ const DashboardContent = ({ driverName, onLogout }: {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Your Projects</h2>
-          <p className="text-gray-600">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--dp-bg)' }}>
+        <div className="p-8 max-w-md w-full text-center" style={{ background: 'var(--dp-surface)', borderRadius: 'var(--dp-radius)', border: '1px solid var(--dp-border)' }}>
+          <div className="animate-spin rounded-full h-12 w-12 mx-auto mb-4" style={{ border: '4px solid var(--dp-border)', borderTopColor: 'var(--dp-accent)' }}></div>
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--dp-text)' }}>Loading Your Projects</h2>
+          <p style={{ color: 'var(--dp-text-muted)' }}>
             {retryCount > 0 ? `Retrying... (${retryCount}/3)` : 'Please wait while we fetch your assigned trips'}
           </p>
         </div>
@@ -510,22 +547,24 @@ const DashboardContent = ({ driverName, onLogout }: {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-900 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Unable to Load Projects</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--dp-bg)' }}>
+        <div className="p-8 max-w-md w-full text-center" style={{ background: 'var(--dp-surface)', borderRadius: 'var(--dp-radius)', border: '1px solid var(--dp-border)' }}>
+          <AlertTriangle className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--dp-danger)' }} />
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--dp-text)' }}>Unable to Load Projects</h2>
+          <p className="mb-6" style={{ color: 'var(--dp-text-muted)' }}>{error}</p>
           <div className="space-y-3">
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="w-full bg-red-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
+              className="w-full text-white py-3 px-4 rounded-lg font-medium disabled:opacity-50 transition-colors"
+              style={{ background: 'var(--dp-danger)' }}
             >
               {refreshing ? 'Retrying...' : 'Try Again'}
             </button>
             <button
               onClick={onLogout}
-              className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+              className="w-full py-3 px-4 rounded-lg font-medium transition-colors"
+              style={{ background: 'var(--dp-surface-2)', color: 'var(--dp-text-secondary)' }}
             >
               Back to Login
             </button>
@@ -536,27 +575,24 @@ const DashboardContent = ({ driverName, onLogout }: {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen" style={{ background: 'var(--dp-bg)' }}>
       {/* Header */}
-      <div className="bg-white/90 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40">
+      <div className="sticky top-0 z-40" style={{ background: 'var(--dp-surface)', borderBottom: '1px solid var(--dp-border)' }}>
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-xl font-bold" style={{ color: 'var(--dp-text)' }}>
                 Welcome, {driverName}!
               </h1>
-              <p className="text-gray-600">Your driver portal dashboard</p>
+              <p className="text-sm" style={{ color: 'var(--dp-text-muted)' }}>Your driver portal dashboard</p>
             </div>
             
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-2">
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className={`p-2 rounded-lg transition-colors ${
-                  refreshing 
-                    ? 'text-gray-400' 
-                    : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
-                }`}
+                className="p-2.5 rounded-lg transition-colors"
+                style={{ color: refreshing ? 'var(--dp-text-muted)' : 'var(--dp-text-secondary)' }}
                 title="Refresh projects"
               >
                 <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
@@ -564,10 +600,11 @@ const DashboardContent = ({ driverName, onLogout }: {
               
               <button
                 onClick={onLogout}
-                className="flex items-center space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg transition-colors"
+                style={{ color: 'var(--dp-danger)' }}
               >
                 <LogOut className="w-5 h-5" />
-                <span>Logout</span>
+                <span className="text-sm font-medium">Logout</span>
               </button>
             </div>
           </div>
@@ -576,55 +613,42 @@ const DashboardContent = ({ driverName, onLogout }: {
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Stats Overview */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: 'Pending', value: stats.pending, icon: Bell, valueColor: 'var(--dp-warning)' },
+            { label: 'Accepted', value: stats.accepted, icon: CheckCircle, valueColor: 'var(--dp-accent)' },
+            { label: 'Completed', value: stats.completed, icon: TrendingUp, valueColor: 'var(--dp-success)' },
+            { label: 'Earnings', value: `€${stats.totalEarnings.toFixed(0)}`, icon: Wallet, valueColor: 'var(--dp-success)', hasAdd: true },
+          ].map((tile) => (
+            <div
+              key={tile.label}
+              className="p-4 flex items-start justify-between"
+              style={{
+                background: 'var(--dp-surface)',
+                borderRadius: 'var(--dp-radius)',
+                border: '1px solid var(--dp-border)',
+                minHeight: 88,
+              }}
+            >
+              <div className="flex flex-col justify-between h-full">
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--dp-text-muted)' }}>{tile.label}</p>
+                <p className="text-2xl font-bold tabular-nums leading-none" style={{ color: tile.valueColor }}>{tile.value}</p>
               </div>
-              <Bell className="w-8 h-8 text-yellow-500" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Accepted</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.accepted}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-blue-500" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-green-500" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Earnings</p>
-                <p className="text-xl font-bold text-green-600">€{stats.totalEarnings.toFixed(0)}</p>
-              </div>
-              <div className="flex flex-col items-center gap-1">
-                <DollarSign className="w-8 h-8 text-green-500" />
-                <button
-                  onClick={() => setShowEarningsForm(true)}
-                  className="flex items-center gap-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 px-2 py-1 rounded-lg transition-colors"
-                >
-                  <Plus className="w-3 h-3" />
-                  Add
-                </button>
+              <div className="flex flex-col items-center gap-1.5 shrink-0">
+                <tile.icon className="w-5 h-5" style={{ color: 'var(--dp-text-muted)' }} />
+                {tile.hasAdd && (
+                  <button
+                    onClick={() => setShowEarningsForm(true)}
+                    className="flex items-center gap-0.5 text-[11px] font-semibold text-white px-2 py-1 rounded-md transition-colors"
+                    style={{ background: 'var(--dp-success)' }}
+                  >
+                    <Plus className="w-3 h-3" />
+                    Add
+                  </button>
+                )}
               </div>
             </div>
-          </div>
+          ))}
         </div>
 
         {/* Success Toast */}
@@ -634,32 +658,38 @@ const DashboardContent = ({ driverName, onLogout }: {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl flex items-center gap-2"
+              className="px-4 py-3 flex items-center gap-2"
+              style={{
+                background: 'var(--dp-success-bg)',
+                color: 'var(--dp-success)',
+                borderRadius: 'var(--dp-radius)',
+                border: '1px solid var(--dp-success-bg)',
+              }}
             >
-              <CheckCircle className="w-5 h-5 text-green-600" />
+              <CheckCircle className="w-5 h-5" />
               <span className="font-medium">{earningsSuccess}</span>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Monthly Earnings Breakdown */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-hidden" style={{ background: 'var(--dp-surface)', borderRadius: 'var(--dp-radius)', border: '1px solid var(--dp-border)' }}>
           <button
             onClick={() => { setEarningsExpanded(e => !e); if (earningsExpanded) setSelectedMonth(null); }}
-            className="w-full px-5 py-4 border-b border-gray-100 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+            className="w-full px-5 py-4 flex items-center justify-between cursor-pointer transition-colors"
+            style={{ borderBottom: '1px solid var(--dp-border)' }}
           >
             <div className="flex items-center gap-3">
-              <div className="bg-green-100 p-2 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-green-600" />
-              </div>
+              <TrendingUp className="w-5 h-5" style={{ color: 'var(--dp-text-muted)' }} />
               <div className="text-left">
-                <h3 className="text-lg font-semibold text-gray-900">Monthly Earnings</h3>
-                <p className="text-sm text-gray-500">Total {earningsYear}: {'\u20AC'}{yearTotal.toFixed(2)}</p>
+                <h3 className="text-base font-semibold" style={{ color: 'var(--dp-text)' }}>Monthly Earnings</h3>
+                <p className="text-sm" style={{ color: 'var(--dp-text-muted)' }}>Total {earningsYear}: {'\u20AC'}{yearTotal.toFixed(2)}</p>
               </div>
             </div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${earningsExpanded ? 'rotate-180' : ''}`}
+              className={`w-5 h-5 transition-transform duration-300 ${earningsExpanded ? 'rotate-180' : ''}`}
+              style={{ color: 'var(--dp-text-muted)' }}
               fill="none" viewBox="0 0 24 24" stroke="currentColor"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -670,14 +700,16 @@ const DashboardContent = ({ driverName, onLogout }: {
             <div className="px-5 pt-3 pb-1 flex items-center justify-center gap-2">
               <button
                 onClick={() => { setEarningsYear(y => y - 1); setSelectedMonth(null); }}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+                className="p-1.5 rounded-lg transition-colors"
+                style={{ color: 'var(--dp-text-muted)' }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
               </button>
-              <span className="text-sm font-semibold text-gray-700 min-w-[3rem] text-center">{earningsYear}</span>
+              <span className="text-sm font-semibold min-w-[3rem] text-center" style={{ color: 'var(--dp-text-secondary)' }}>{earningsYear}</span>
               <button
                 onClick={() => { setEarningsYear(y => y + 1); setSelectedMonth(null); }}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+                className="p-1.5 rounded-lg transition-colors"
+                style={{ color: 'var(--dp-text-muted)' }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </button>
@@ -695,23 +727,28 @@ const DashboardContent = ({ driverName, onLogout }: {
                     <button
                       key={m.month}
                       onClick={() => setSelectedMonth(isSelected ? null : m.month)}
-                      className={`flex flex-col items-center p-2 rounded-xl transition-all duration-200 ${
-                        isSelected ? 'bg-green-100 ring-2 ring-green-400 scale-105' :
-                        isCurrent ? 'bg-green-50 ring-1 ring-green-200' : 'hover:bg-gray-50'
-                      }`}
+                      className="flex flex-col items-center p-2 rounded-xl transition-all duration-200"
+                      style={{
+                        background: isSelected ? 'var(--dp-accent-soft)' : isCurrent ? 'var(--dp-surface-2)' : 'transparent',
+                        boxShadow: isSelected ? '0 0 0 2px var(--dp-accent)' : isCurrent ? '0 0 0 1px var(--dp-border)' : 'none',
+                        transform: isSelected ? 'scale(1.05)' : 'none',
+                      }}
                     >
-                      <span className="text-xs font-medium text-gray-500 mb-2">{m.label}</span>
+                      <span className="text-xs font-medium mb-2" style={{ color: 'var(--dp-text-muted)' }}>{m.label}</span>
                       <div className="w-full h-20 flex items-end justify-center mb-2">
                         <div
-                          className={`w-6 rounded-t-md transition-all duration-500 ${m.total > 0 ? 'bg-gradient-to-t from-green-600 to-green-400' : 'bg-gray-100'}`}
-                          style={{ height: `${barHeight}%` }}
+                          className="w-6 rounded-t-md transition-all duration-500"
+                          style={{
+                            height: `${barHeight}%`,
+                            background: m.total > 0 ? 'var(--dp-accent)' : 'var(--dp-border)',
+                          }}
                         />
                       </div>
-                      <span className={`text-xs font-bold ${m.total > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
+                      <span className="text-xs font-bold" style={{ color: m.total > 0 ? 'var(--dp-text)' : 'var(--dp-text-muted)' }}>
                         {'\u20AC'}{m.total.toFixed(0)}
                       </span>
                       {m.trips > 0 && (
-                        <span className="text-[10px] text-gray-400 mt-0.5">{m.trips} trip{m.trips !== 1 ? 's' : ''}</span>
+                        <span className="text-[10px] mt-0.5" style={{ color: 'var(--dp-text-muted)' }}>{m.trips} trip{m.trips !== 1 ? 's' : ''}</span>
                       )}
                     </button>
                   );
@@ -721,35 +758,35 @@ const DashboardContent = ({ driverName, onLogout }: {
 
             {/* Expanded month detail */}
             {selectedMonth !== null && (
-              <div className="px-5 pb-5 border-t border-gray-100">
+              <div className="px-5 pb-5" style={{ borderTop: '1px solid var(--dp-border)' }}>
                 <div className="pt-4">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                  <h4 className="text-sm font-semibold mb-3" style={{ color: 'var(--dp-text)' }}>
                     {monthlyEarnings[selectedMonth].fullLabel} {earningsYear} Details
                   </h4>
 
                   {selectedMonthTrips.length === 0 && selectedMonthPayments.length === 0 ? (
-                    <p className="text-sm text-gray-400 py-4 text-center">No earnings this month</p>
+                    <p className="text-sm py-4 text-center" style={{ color: 'var(--dp-text-muted)' }}>No earnings this month</p>
                   ) : (
                     <div className="space-y-2">
                       {selectedMonthTrips.length > 0 && (
                         <div>
-                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Completed Trips</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--dp-text-muted)' }}>Completed Trips</p>
                           <div className="space-y-1.5">
                             {selectedMonthTrips.map((trip) => (
-                              <div key={trip.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                              <div key={trip.id} className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: 'var(--dp-surface-2)' }}>
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <Car className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                  <Car className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--dp-text-muted)' }} />
                                   <div className="min-w-0">
-                                    <p className="text-sm text-gray-800 truncate">
+                                    <p className="text-sm truncate" style={{ color: 'var(--dp-text)' }}>
                                       {trip.pickup_location || 'Pickup'} → {trip.dropoff_location || 'Dropoff'}
                                     </p>
-                                    <p className="text-xs text-gray-400">
+                                    <p className="text-xs" style={{ color: 'var(--dp-text-muted)' }}>
                                       {new Date(trip.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                                       {trip.time ? ` at ${trip.time}` : ''}
                                     </p>
                                   </div>
                                 </div>
-                                <span className="text-sm font-semibold text-green-700 shrink-0 ml-2">
+                                <span className="text-sm font-semibold shrink-0 ml-2" style={{ color: 'var(--dp-success)' }}>
                                   {'\u20AC'}{(trip.driver_fee || trip.price).toFixed(2)}
                                 </span>
                               </div>
@@ -760,20 +797,20 @@ const DashboardContent = ({ driverName, onLogout }: {
 
                       {selectedMonthPayments.length > 0 && (
                         <div className={selectedMonthTrips.length > 0 ? 'mt-3' : ''}>
-                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Payments</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--dp-text-muted)' }}>Payments</p>
                           <div className="space-y-1.5">
                             {selectedMonthPayments.map((payment) => (
-                              <div key={payment.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                              <div key={payment.id} className="flex items-center justify-between rounded-lg px-3 py-2" style={{ background: 'var(--dp-surface-2)' }}>
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <Wallet className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                  <Wallet className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--dp-text-muted)' }} />
                                   <div className="min-w-0">
-                                    <p className="text-sm text-gray-800 truncate">{payment.description || 'Payment'}</p>
-                                    <p className="text-xs text-gray-400">
+                                    <p className="text-sm truncate" style={{ color: 'var(--dp-text)' }}>{payment.description || 'Payment'}</p>
+                                    <p className="text-xs" style={{ color: 'var(--dp-text-muted)' }}>
                                       {new Date(payment.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                                     </p>
                                   </div>
                                 </div>
-                                <span className="text-sm font-semibold text-green-700 shrink-0 ml-2">
+                                <span className="text-sm font-semibold shrink-0 ml-2" style={{ color: 'var(--dp-success)' }}>
                                   {'\u20AC'}{payment.amount.toFixed(2)}
                                 </span>
                               </div>
@@ -782,9 +819,9 @@ const DashboardContent = ({ driverName, onLogout }: {
                         </div>
                       )}
 
-                      <div className="flex justify-between items-center pt-3 mt-2 border-t border-gray-200">
-                        <span className="text-sm font-medium text-gray-600">Month Total</span>
-                        <span className="text-base font-bold text-green-700">
+                      <div className="flex justify-between items-center pt-3 mt-2" style={{ borderTop: '1px solid var(--dp-border)' }}>
+                        <span className="text-sm font-medium" style={{ color: 'var(--dp-text-secondary)' }}>Month Total</span>
+                        <span className="text-base font-bold" style={{ color: 'var(--dp-success)' }}>
                           {'\u20AC'}{monthlyEarnings[selectedMonth].total.toFixed(2)}
                         </span>
                       </div>
@@ -799,12 +836,13 @@ const DashboardContent = ({ driverName, onLogout }: {
         {/* Project Categories */}
         {organizedProjects.urgent.length > 0 && (
           <div>
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="bg-red-100 p-2 rounded-lg">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-              </div>
-              <h2 className="text-xl font-bold text-red-700">Urgent - Starting Soon!</h2>
-              <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle className="w-5 h-5" style={{ color: 'var(--dp-danger)' }} />
+              <h2 className="text-lg font-bold" style={{ color: 'var(--dp-text)' }}>Urgent - Starting Soon!</h2>
+              <span
+                className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+                style={{ background: 'var(--dp-charge-bg)', color: 'var(--dp-danger)' }}
+              >
                 {organizedProjects.urgent.length} trip{organizedProjects.urgent.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -813,21 +851,7 @@ const DashboardContent = ({ driverName, onLogout }: {
                 const dl = getDateLabel(dateKey);
                 return (
                   <div key={dateKey} className="space-y-3">
-                    <div className="bg-gradient-to-r from-red-600 to-red-500 rounded-xl px-4 py-3 shadow-md border border-white/20 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg">
-                          <Calendar className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-white leading-tight">{dl.main}</h3>
-                          <p className="text-white/80 text-sm">{dl.sub}</p>
-                        </div>
-                      </div>
-                      <div className="bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg text-center">
-                        <span className="text-lg font-bold text-white">{trips.length}</span>
-                        <p className="text-white/80 text-xs">trip{trips.length !== 1 ? 's' : ''}</p>
-                      </div>
-                    </div>
+                    <DateStripHeader label={dl} count={trips.length} variant="urgent" />
                     <div className="grid gap-4 md:grid-cols-2">
                       {trips.map((project: any) => (
                         <DriverProjectCard key={project.id} project={project} companyName={getCompanyName(project.company_id)} carTypeName={getCarTypeName(project.car_type_id)} />
@@ -842,12 +866,13 @@ const DashboardContent = ({ driverName, onLogout }: {
 
         {organizedProjects.today.length > 0 && (
           <div>
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="bg-blue-100 p-2 rounded-lg">
-                <Calendar className="w-5 h-5 text-blue-600" />
-              </div>
-              <h2 className="text-xl font-bold text-blue-700">Today's Trips</h2>
-              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+            <div className="flex items-center gap-3 mb-4">
+              <Calendar className="w-5 h-5" style={{ color: 'var(--dp-text-muted)' }} />
+              <h2 className="text-lg font-bold" style={{ color: 'var(--dp-text)' }}>Today's Trips</h2>
+              <span
+                className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+                style={{ background: 'var(--dp-accent-soft)', color: 'var(--dp-accent)' }}
+              >
                 {organizedProjects.today.length} trip{organizedProjects.today.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -856,21 +881,7 @@ const DashboardContent = ({ driverName, onLogout }: {
                 const dl = getDateLabel(dateKey);
                 return (
                   <div key={dateKey} className="space-y-3">
-                    <div className="bg-gradient-to-r from-green-700 to-green-500 rounded-xl px-4 py-3 shadow-md border border-white/20 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg">
-                          <Calendar className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-white leading-tight">{dl.main}</h3>
-                          <p className="text-white/80 text-sm">{dl.sub}</p>
-                        </div>
-                      </div>
-                      <div className="bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg text-center">
-                        <span className="text-lg font-bold text-white">{trips.length}</span>
-                        <p className="text-white/80 text-xs">trip{trips.length !== 1 ? 's' : ''}</p>
-                      </div>
-                    </div>
+                    <DateStripHeader label={dl} count={trips.length} />
                     <div className="grid gap-4 md:grid-cols-2">
                       {trips.map((project: any) => (
                         <DriverProjectCard key={project.id} project={project} companyName={getCompanyName(project.company_id)} carTypeName={getCarTypeName(project.car_type_id)} />
@@ -885,12 +896,13 @@ const DashboardContent = ({ driverName, onLogout }: {
 
         {organizedProjects.upcoming.length > 0 && (
           <div>
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="bg-green-100 p-2 rounded-lg">
-                <Clock className="w-5 h-5 text-green-600" />
-              </div>
-              <h2 className="text-xl font-bold text-green-700">Upcoming Trips</h2>
-              <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+            <div className="flex items-center gap-3 mb-4">
+              <Clock className="w-5 h-5" style={{ color: 'var(--dp-text-muted)' }} />
+              <h2 className="text-lg font-bold" style={{ color: 'var(--dp-text)' }}>Upcoming Trips</h2>
+              <span
+                className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+                style={{ background: 'var(--dp-accent-soft)', color: 'var(--dp-accent)' }}
+              >
                 {organizedProjects.upcoming.length} trip{organizedProjects.upcoming.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -899,21 +911,7 @@ const DashboardContent = ({ driverName, onLogout }: {
                 const dl = getDateLabel(dateKey);
                 return (
                   <div key={dateKey} className="space-y-3">
-                    <div className="bg-gradient-to-r from-green-700 to-green-500 rounded-xl px-4 py-3 shadow-md border border-white/20 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg">
-                          <Calendar className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-white leading-tight">{dl.main}</h3>
-                          <p className="text-white/80 text-sm">{dl.sub}</p>
-                        </div>
-                      </div>
-                      <div className="bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-lg text-center">
-                        <span className="text-lg font-bold text-white">{trips.length}</span>
-                        <p className="text-white/80 text-xs">trip{trips.length !== 1 ? 's' : ''}</p>
-                      </div>
-                    </div>
+                    <DateStripHeader label={dl} count={trips.length} />
                     <div className="grid gap-4 md:grid-cols-2">
                       {trips.map((project: any) => (
                         <DriverProjectCard key={project.id} project={project} companyName={getCompanyName(project.company_id)} carTypeName={getCarTypeName(project.car_type_id)} />
@@ -928,18 +926,22 @@ const DashboardContent = ({ driverName, onLogout }: {
 
         {/* No Projects State */}
         {projects.length === 0 && (
-          <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-            <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Car className="w-8 h-8 text-gray-400" />
+          <div className="p-12 text-center" style={{ background: 'var(--dp-surface)', borderRadius: 'var(--dp-radius)', border: '1px solid var(--dp-border)' }}>
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ background: 'var(--dp-surface-2)' }}
+            >
+              <Car className="w-8 h-8" style={{ color: 'var(--dp-text-muted)' }} />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No trips assigned yet</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--dp-text)' }}>No trips assigned yet</h3>
+            <p className="mb-6" style={{ color: 'var(--dp-text-muted)' }}>
               Your dispatcher hasn't assigned any trips to you yet. Check back later or contact them directly.
             </p>
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="text-white px-6 py-3 rounded-lg font-medium disabled:opacity-50 transition-colors"
+              style={{ background: 'var(--dp-accent)' }}
             >
               {refreshing ? 'Checking...' : 'Check for New Trips'}
             </button>
@@ -949,12 +951,13 @@ const DashboardContent = ({ driverName, onLogout }: {
         {/* Completed Trips Summary */}
         {organizedProjects.completed.length > 0 && (
           <div>
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="bg-gray-100 p-2 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-gray-600" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-700">Recently Completed</h2>
-              <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
+            <div className="flex items-center gap-3 mb-4">
+              <CheckCircle className="w-5 h-5" style={{ color: 'var(--dp-text-muted)' }} />
+              <h2 className="text-lg font-bold" style={{ color: 'var(--dp-text)' }}>Recently Completed</h2>
+              <span
+                className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold"
+                style={{ background: 'var(--dp-surface-2)', color: 'var(--dp-text-secondary)' }}
+              >
                 {organizedProjects.completed.length} trip{organizedProjects.completed.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -962,15 +965,19 @@ const DashboardContent = ({ driverName, onLogout }: {
             {/* Show only last 3 completed trips */}
             <div className="grid gap-4 md:grid-cols-2">
               {organizedProjects.completed.slice(0, 3).map(project => (
-                <div key={project.id} className="bg-white rounded-xl shadow-sm p-4 border border-gray-200 opacity-75">
+                <div
+                  key={project.id}
+                  className="p-4 opacity-75"
+                  style={{ background: 'var(--dp-surface)', borderRadius: 'var(--dp-radius)', border: '1px solid var(--dp-border)' }}
+                >
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-gray-900">{project.client_name}</h4>
-                    <span className="text-green-600 font-bold">€{(project.driver_fee || project.price).toFixed(2)}</span>
+                    <h4 className="font-medium" style={{ color: 'var(--dp-text)' }}>{project.client_name}</h4>
+                    <span className="font-bold tabular-nums" style={{ color: 'var(--dp-success)' }}>€{(project.driver_fee || project.price).toFixed(2)}</span>
                   </div>
-                  <p className="text-sm text-gray-600">{formatDate(project.date)} at {formatTime(project.time)}</p>
-                  <div className="flex items-center mt-2">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-1" />
-                    <span className="text-sm text-green-600 font-medium">Completed</span>
+                  <p className="text-sm" style={{ color: 'var(--dp-text-muted)' }}>{formatDate(project.date)} at {formatTime(project.time)}</p>
+                  <div className="flex items-center mt-2 gap-1">
+                    <CheckCircle className="w-4 h-4" style={{ color: 'var(--dp-success)' }} />
+                    <span className="text-sm font-medium" style={{ color: 'var(--dp-success)' }}>Completed</span>
                   </div>
                 </div>
               ))}
@@ -978,7 +985,7 @@ const DashboardContent = ({ driverName, onLogout }: {
             
             {organizedProjects.completed.length > 3 && (
               <div className="text-center mt-4">
-                <span className="text-sm text-gray-500">
+                <span className="text-sm" style={{ color: 'var(--dp-text-muted)' }}>
                   {organizedProjects.completed.length - 3} more completed trips
                 </span>
               </div>
@@ -987,22 +994,21 @@ const DashboardContent = ({ driverName, onLogout }: {
         )}
 
         {/* Earnings / Payments Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-hidden" style={{ background: 'var(--dp-surface)', borderRadius: 'var(--dp-radius)', border: '1px solid var(--dp-border)' }}>
           <div className="flex items-center justify-between">
             <button
               onClick={() => setPaymentsExpanded(e => !e)}
-              className="flex-1 px-5 py-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors"
+              className="flex-1 px-5 py-4 flex items-center gap-3 cursor-pointer transition-colors"
             >
-              <div className="bg-green-100 p-2 rounded-lg">
-                <Wallet className="w-5 h-5 text-green-600" />
-              </div>
+              <Wallet className="w-5 h-5" style={{ color: 'var(--dp-text-muted)' }} />
               <div className="text-left">
-                <h2 className="text-lg font-semibold text-gray-900">Earnings & Payments</h2>
-                <p className="text-sm text-gray-500">{payments.length} record{payments.length !== 1 ? 's' : ''}</p>
+                <h2 className="text-base font-semibold" style={{ color: 'var(--dp-text)' }}>Earnings & Payments</h2>
+                <p className="text-sm" style={{ color: 'var(--dp-text-muted)' }}>{payments.length} record{payments.length !== 1 ? 's' : ''}</p>
               </div>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className={`w-5 h-5 text-gray-400 transition-transform duration-300 ml-auto ${paymentsExpanded ? 'rotate-180' : ''}`}
+                className={`w-5 h-5 transition-transform duration-300 ml-auto ${paymentsExpanded ? 'rotate-180' : ''}`}
+                style={{ color: 'var(--dp-text-muted)' }}
                 fill="none" viewBox="0 0 24 24" stroke="currentColor"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1015,7 +1021,8 @@ const DashboardContent = ({ driverName, onLogout }: {
                   setEarningsError('');
                   setEarningsForm({ amount: '', date: new Date().toISOString().split('T')[0], description: '' });
                 }}
-                className="flex items-center space-x-1 bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                className="flex items-center gap-1 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                style={{ background: 'var(--dp-success)' }}
               >
                 <Plus className="w-4 h-4" />
                 <span>Add</span>
@@ -1026,58 +1033,62 @@ const DashboardContent = ({ driverName, onLogout }: {
           {/* Add Earnings Modal */}
           {showEarningsForm && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+              <div className="w-full max-w-md p-6" style={{ background: 'var(--dp-surface)', borderRadius: 'var(--dp-radius)' }}>
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-bold text-gray-900">Add Manual Earnings</h3>
-                  <button onClick={() => setShowEarningsForm(false)} className="p-1 hover:bg-gray-100 rounded-lg">
-                    <X className="w-5 h-5 text-gray-500" />
+                  <h3 className="text-lg font-bold" style={{ color: 'var(--dp-text)' }}>Add Manual Earnings</h3>
+                  <button onClick={() => setShowEarningsForm(false)} className="p-1 rounded-lg" style={{ color: 'var(--dp-text-muted)' }}>
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
 
                 {earningsError && (
-                  <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+                  <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'var(--dp-charge-bg)', color: 'var(--dp-danger)' }}>
                     {earningsError}
                   </div>
                 )}
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Amount (EUR)</label>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--dp-text-secondary)' }}>Amount (EUR)</label>
                     <input
                       type="number"
                       step="0.01"
                       min="0.01"
                       value={earningsForm.amount}
                       onChange={(e) => setEarningsForm({ ...earningsForm, amount: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
+                      style={{ border: '1px solid var(--dp-border)', background: 'var(--dp-surface)', color: 'var(--dp-text)', ['--tw-ring-color' as string]: 'var(--dp-accent)' }}
                       placeholder="0.00"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--dp-text-secondary)' }}>Date</label>
                     <input
                       type="date"
                       value={earningsForm.date}
                       onChange={(e) => setEarningsForm({ ...earningsForm, date: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
+                      style={{ border: '1px solid var(--dp-border)', background: 'var(--dp-surface)', color: 'var(--dp-text)' }}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--dp-text-secondary)' }}>Description</label>
                     <input
                       type="text"
                       value={earningsForm.description}
                       onChange={(e) => setEarningsForm({ ...earningsForm, description: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full rounded-lg px-3 py-2 focus:outline-none focus:ring-2"
+                      style={{ border: '1px solid var(--dp-border)', background: 'var(--dp-surface)', color: 'var(--dp-text)' }}
                       placeholder="e.g. Cash tip, Private ride"
                     />
                   </div>
                 </div>
 
-                <div className="flex space-x-3 mt-6">
+                <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setShowEarningsForm(false)}
-                    className="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-2.5 rounded-lg font-medium transition-colors"
+                    style={{ border: '1px solid var(--dp-border)', color: 'var(--dp-text-secondary)', background: 'var(--dp-surface)' }}
                   >
                     Cancel
                   </button>
@@ -1109,7 +1120,8 @@ const DashboardContent = ({ driverName, onLogout }: {
                       }
                     }}
                     disabled={submittingEarnings}
-                    className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                    className="flex-1 text-white px-4 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+                    style={{ background: 'var(--dp-success)' }}
                   >
                     {submittingEarnings ? 'Adding...' : 'Add Earnings'}
                   </button>
@@ -1120,30 +1132,35 @@ const DashboardContent = ({ driverName, onLogout }: {
 
           {/* Collapsible Payments List */}
           <div className={`transition-all duration-300 ease-in-out overflow-hidden ${paymentsExpanded ? 'max-h-[3000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-            <div className="border-t border-gray-100">
+            <div style={{ borderTop: '1px solid var(--dp-border)' }}>
               {payments.length > 0 ? (
                 <div className="p-4 space-y-2">
                   {payments.slice(0, 10).map(payment => (
-                    <div key={payment.id} className="bg-gray-50 rounded-lg px-4 py-3">
+                    <div key={payment.id} className="rounded-lg px-4 py-3" style={{ background: 'var(--dp-surface-2)' }}>
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="font-semibold text-gray-900 text-sm truncate">{payment.description || 'Payment'}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
-                              payment.source === 'driver' 
-                                ? 'bg-blue-100 text-blue-700' 
-                                : 'bg-gray-200 text-gray-600'
-                            }`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-sm truncate" style={{ color: 'var(--dp-text)' }}>{payment.description || 'Payment'}</span>
+                            <span
+                              className="text-[11px] px-2 py-0.5 rounded-full font-semibold shrink-0"
+                              style={{
+                                background: payment.source === 'driver' ? 'var(--dp-accent-soft)' : 'var(--dp-surface)',
+                                color: payment.source === 'driver' ? 'var(--dp-accent)' : 'var(--dp-text-muted)',
+                              }}
+                            >
                               {payment.source === 'driver' ? 'Added by you' : 'From dispatcher'}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs" style={{ color: 'var(--dp-text-muted)' }}>
                             {new Date(payment.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                           </p>
                         </div>
                         <div className="text-right shrink-0 ml-3">
-                          <span className="text-base font-bold text-green-600">{'\u20AC'}{payment.amount.toFixed(2)}</span>
-                          <p className={`text-xs font-medium ${payment.status === 'paid' ? 'text-green-500' : 'text-amber-500'}`}>
+                          <span className="text-base font-bold tabular-nums" style={{ color: 'var(--dp-success)' }}>{'\u20AC'}{payment.amount.toFixed(2)}</span>
+                          <p
+                            className="text-[11px] font-semibold"
+                            style={{ color: payment.status === 'paid' ? 'var(--dp-success)' : 'var(--dp-warning)' }}
+                          >
                             {payment.status === 'paid' ? 'Paid' : 'Pending'}
                           </p>
                         </div>
@@ -1152,14 +1169,14 @@ const DashboardContent = ({ driverName, onLogout }: {
                   ))}
                   {payments.length > 10 && (
                     <div className="text-center pt-1">
-                      <span className="text-sm text-gray-500">{payments.length - 10} more payments</span>
+                      <span className="text-sm" style={{ color: 'var(--dp-text-muted)' }}>{payments.length - 10} more payments</span>
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="p-6 text-center">
-                  <Wallet className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">No payment records yet. Add your earnings manually or wait for dispatcher payments.</p>
+                  <Wallet className="w-8 h-8 mx-auto mb-2" style={{ color: 'var(--dp-border-strong)' }} />
+                  <p className="text-sm" style={{ color: 'var(--dp-text-muted)' }}>No payment records yet. Add your earnings manually or wait for dispatcher payments.</p>
                 </div>
               )}
             </div>
@@ -1169,6 +1186,29 @@ const DashboardContent = ({ driverName, onLogout }: {
     </div>
   );
 };
+
+// Date strip header used by all trip categories
+function DateStripHeader({ label, count, variant }: { label: { main: string; sub: string }; count: number; variant?: 'urgent' }) {
+  const bg = variant === 'urgent' ? 'var(--dp-danger)' : 'var(--dp-accent)';
+  return (
+    <div
+      className="flex items-center justify-between px-4 py-3"
+      style={{ background: bg, borderRadius: 'var(--dp-radius)' }}
+    >
+      <div className="flex items-center gap-3">
+        <Calendar className="w-5 h-5 text-white/80" />
+        <div>
+          <h3 className="text-base font-bold text-white leading-tight">{label.main}</h3>
+          <p className="text-white/70 text-sm">{label.sub}</p>
+        </div>
+      </div>
+      <div className="bg-white/20 px-3 py-1.5 rounded-lg text-center">
+        <span className="text-lg font-bold text-white tabular-nums">{count}</span>
+        <p className="text-white/70 text-[11px]">trip{count !== 1 ? 's' : ''}</p>
+      </div>
+    </div>
+  );
+}
 
 // Helper functions for date formatting
 const formatDate = (date: string) => {
