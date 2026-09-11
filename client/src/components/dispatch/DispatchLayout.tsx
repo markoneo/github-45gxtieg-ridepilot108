@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Car, Calendar, Users, CreditCard, BarChart2, FileText, Settings,
+  Car, Users, CreditCard, BarChart2, FileText, Settings,
   LogOut, Search, Plus, RefreshCw, Bell, X, Menu, ChevronDown, Bot,
-  Gauge, Building2
+  Gauge, Building2, ClipboardCheck
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
@@ -39,9 +39,8 @@ function getChannelColor(index: number): string {
 
 const NAV_ITEMS = [
   { id: 'dispatch', label: 'Dispatch', icon: Car, path: '/dashboard' },
-  { id: 'calendar', label: 'Calendar', icon: Calendar, path: null },
+  { id: 'completed', label: 'Completed Projects', icon: ClipboardCheck, path: '/completed-projects' },
   { id: 'drivers', label: 'Drivers', icon: Users, path: '/settings/drivers' },
-  { id: 'payments', label: 'Payments', icon: CreditCard, path: '/settings/payments' },
   { id: 'statistics', label: 'Statistics', icon: BarChart2, path: '/statistics' },
   { id: 'reports', label: 'Reports', icon: FileText, path: '/financial-report' },
   { id: 'ai-assistant', label: 'AI Assistant', icon: Bot, path: '/ai-assistant' },
