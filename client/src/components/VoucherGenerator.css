@@ -1,29 +1,552 @@
-/* Mobile-optimized styles for the voucher */
-.voucher-mobile-view {
-  width: 100%;
-  max-width: 420px;
+/* ── Voucher design tokens ── */
+.voucher-sheet {
+  --v-paper: #FFFFFF;
+  --v-ink: #0B1A15;
+  --v-body: #35453F;
+  --v-muted: #6E837B;
+  --v-rule: #D9E4DF;
+  --v-tint: #F2F7F5;
+  --v-accent: #046C4E;
+  --v-accent-tint: #E6F4EE;
+  --v-cash: #8A3A0B;
+  --v-cash-tint: #FDF3EA;
+  --v-cash-border: #F0D6BE;
+
+  font-family: 'Barlow', system-ui, sans-serif;
+  color: var(--v-body);
+  background: var(--v-paper);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  max-width: 680px;
   margin: 0 auto;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
+  overflow: hidden;
 }
 
-/* Print styles */
+.voucher-sheet *,
+.voucher-sheet *::before,
+.voucher-sheet *::after {
+  box-sizing: border-box;
+}
+
+/* ── Fonts ── */
+.v-mono {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.v-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--v-muted);
+  line-height: 1.2;
+}
+
+/* ── Masthead ── */
+.v-masthead {
+  background: var(--v-ink);
+  color: #fff;
+  padding: 20px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.v-masthead-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.v-wordmark {
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.v-wordmark-connect {
+  color: #4ADE9B;
+}
+.v-masthead-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,.55);
+  font-weight: 500;
+}
+.v-masthead-right {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.v-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 100px;
+  background: rgba(74,222,155,.14);
+  color: #4ADE9B;
+  white-space: nowrap;
+}
+.v-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4ADE9B;
+}
+.v-ref-block {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.v-ref-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 19px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.v-qr {
+  width: 62px;
+  height: 62px;
+  background: #fff;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.v-qr svg {
+  width: 54px;
+  height: 54px;
+}
+
+/* ── Journey strip ── */
+.v-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--v-tint);
+}
+.v-strip-cell {
+  padding: 16px 20px;
+  position: relative;
+}
+.v-strip-cell:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 1px;
+  background: var(--v-rule);
+}
+.v-strip-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--v-ink);
+  line-height: 1.2;
+}
+.v-strip-secondary {
+  font-size: 11px;
+  color: var(--v-muted);
+  margin-top: 2px;
+}
+
+/* ── Route timeline ── */
+.v-route {
+  padding: 28px 28px 24px;
+}
+.v-route-leg {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 0 16px;
+  position: relative;
+}
+.v-route-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+.v-route-dot-pickup {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--v-accent);
+  box-shadow: 0 0 0 4px var(--v-accent-tint);
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.v-route-dot-stop {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--v-paper);
+  border: 2.5px solid var(--v-cash);
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.v-route-dot-dropoff {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--v-ink);
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.v-route-connector {
+  width: 2px;
+  flex: 1;
+  background: var(--v-rule);
+  margin: 4px auto 0;
+  min-height: 24px;
+}
+.v-route-connector-dashed {
+  background: none;
+  border-left: 2px dashed var(--v-rule);
+  width: 0;
+}
+.v-route-content {
+  padding-bottom: 20px;
+}
+.v-route-content:last-child {
+  padding-bottom: 0;
+}
+.v-route-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.v-route-venue {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--v-ink);
+  line-height: 1.3;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.v-route-address {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--v-body);
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.v-route-city {
+  font-size: 13px;
+  color: var(--v-muted);
+  margin-top: 2px;
+}
+
+/* ── People ── */
+.v-people {
+  margin: 0 28px;
+  border: 1px solid var(--v-rule);
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.v-person {
+  padding: 18px 20px;
+}
+.v-person-driver {
+  background: var(--v-tint);
+}
+.v-person-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--v-ink);
+  margin: 6px 0 4px;
+}
+.v-person-phone {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--v-accent);
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+.v-person-phone:focus-visible {
+  outline: 2px solid var(--v-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.v-person-phone:hover {
+  text-decoration: underline;
+}
+.v-person-secondary {
+  font-size: 12px;
+  color: var(--v-muted);
+  margin-top: 4px;
+}
+
+/* ── Tear rule ── */
+.v-tear {
+  border: none;
+  border-top: 2px dashed var(--v-rule);
+  margin: 24px 28px;
+}
+
+/* ── Payment ── */
+.v-payment {
+  padding: 0 28px 24px;
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 24px;
+  align-items: start;
+}
+.v-ledger {
+  width: 100%;
+}
+.v-ledger-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 0;
+  border-top: 1px solid var(--v-rule);
+  gap: 12px;
+}
+.v-ledger-row:first-child {
+  border-top: none;
+}
+.v-ledger-label {
+  font-size: 13.5px;
+  color: var(--v-body);
+  flex: 1;
+  min-width: 0;
+}
+.v-ledger-paid {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.v-ledger-check {
+  color: var(--v-accent);
+}
+.v-ledger-amount {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--v-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+.v-balance-box {
+  background: var(--v-cash-tint);
+  border: 1px solid var(--v-cash-border);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+}
+.v-balance-amount {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--v-cash);
+  line-height: 1;
+  margin: 8px 0;
+  font-variant-numeric: tabular-nums;
+}
+.v-balance-detail {
+  font-size: 12px;
+  color: var(--v-cash);
+  margin-top: 6px;
+}
+
+/* ── Notes ── */
+.v-notes {
+  margin: 0 28px 24px;
+  padding: 14px 18px;
+  background: var(--v-accent-tint);
+  border-left: 3px solid var(--v-accent);
+  border-radius: 0 8px 8px 0;
+  font-size: 13.5px;
+  color: var(--v-body);
+  line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* ── Footer ── */
+.v-footer {
+  background: var(--v-tint);
+  padding: 16px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  font-size: 12.5px;
+  color: var(--v-muted);
+}
+.v-footer-left {
+  line-height: 1.5;
+}
+.v-footer-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+.v-footer-right a {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 500;
+  color: var(--v-accent);
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+.v-footer-right a:focus-visible {
+  outline: 2px solid var(--v-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.v-footer-right a:hover {
+  text-decoration: underline;
+}
+
+/* ── Controls bar (non-print) ── */
+.v-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 28px;
+  background: var(--v-tint);
+  border-bottom: 1px solid var(--v-rule);
+}
+.v-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Barlow', system-ui, sans-serif;
+  border: 1px solid var(--v-rule);
+  background: var(--v-paper);
+  color: var(--v-body);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  min-height: 36px;
+}
+.v-controls button:hover {
+  background: var(--v-tint);
+  border-color: var(--v-muted);
+}
+.v-controls button:focus-visible {
+  outline: 2px solid var(--v-accent);
+  outline-offset: 2px;
+}
+.v-controls .v-btn-primary {
+  background: var(--v-accent);
+  color: #fff;
+  border-color: var(--v-accent);
+}
+.v-controls .v-btn-primary:hover {
+  background: #035a40;
+}
+
+/* ── Responsive: mobile ── */
+@media (max-width: 640px) {
+  .voucher-sheet {
+    border-radius: 0;
+    box-shadow: none;
+    max-width: 100%;
+  }
+  .v-masthead {
+    padding: 16px 20px;
+    flex-wrap: wrap;
+  }
+  .v-qr {
+    display: none;
+  }
+  .v-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .v-strip-cell:nth-child(2)::after {
+    display: none;
+  }
+  .v-strip-cell:nth-child(3),
+  .v-strip-cell:nth-child(4) {
+    border-top: 1px solid var(--v-rule);
+  }
+  .v-route {
+    padding: 20px 20px 16px;
+  }
+  .v-people {
+    margin: 0 20px;
+    grid-template-columns: 1fr;
+  }
+  .v-person-driver {
+    border-top: 1px solid var(--v-rule);
+  }
+  .v-tear {
+    margin: 20px 20px;
+  }
+  .v-payment {
+    padding: 0 20px 20px;
+    grid-template-columns: 1fr;
+  }
+  .v-notes {
+    margin: 0 20px 20px;
+  }
+  .v-footer {
+    padding: 14px 20px;
+    flex-direction: column;
+    text-align: center;
+  }
+  .v-footer-right {
+    text-align: center;
+  }
+  .v-controls {
+    padding: 10px 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+/* ── Print ── */
 @media print {
   @page {
-    size: 80mm 210mm;
-    margin: 0;
+    size: A4;
+    margin: 12mm;
   }
-  
-  body {
-    width: 80mm;
-    margin: 0;
-    padding: 0;
+  .voucher-sheet {
+    box-shadow: none;
+    border-radius: 0;
+    max-width: 100%;
   }
-  
-  .voucher-print-container {
-    width: 100%;
-    padding: 5mm;
-  }
-  
-  .no-print {
+  .v-controls,
+  .v-no-print {
     display: none !important;
+  }
+  .v-masthead,
+  .v-strip,
+  .v-route,
+  .v-people,
+  .v-payment,
+  .v-notes,
+  .v-footer {
+    break-inside: avoid;
+  }
+  .v-route-leg {
+    break-inside: avoid;
+  }
+  .v-balance-box {
+    break-inside: avoid;
   }
 }

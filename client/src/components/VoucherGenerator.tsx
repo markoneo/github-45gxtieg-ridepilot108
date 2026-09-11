@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
-import { Download, Copy, Check, Printer, FileImage, Share2, X, Save, MessageCircle } from 'lucide-react';
+import { Download, Copy, Check, Printer, Save, MessageCircle, X, Share2, FileImage } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toPng, toJpeg } from 'html-to-image';
 import { saveAs } from 'file-saver';
+import './VoucherGenerator.css';
 
 interface VoucherGeneratorProps {
   projectId: string;
@@ -14,127 +15,100 @@ interface VoucherGeneratorProps {
 export default function VoucherGenerator({ projectId, onClose, displayMode = 'modal' }: VoucherGeneratorProps) {
   const { projects, companies, drivers, carTypes } = useData();
   const [copied, setCopied] = useState(false);
-  const [shareMode, setShareMode] = useState<'copy' | null>(null);
   const [imageFormat, setImageFormat] = useState<'png' | 'jpeg'>('jpeg');
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [showControls, setShowControls] = useState(true);
-  const [statusMessage, setStatusMessage] = useState<{text: string, type: 'success' | 'error' | 'info'} | null>(null);
+  const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const voucherRef = useRef<HTMLDivElement>(null);
-  const controlsRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const params = useParams();
-  
-  // If we're on the voucher/:id route, use the ID from the URL
+
   const effectiveProjectId = projectId || params.id || '';
-  
-  // Find the project
   const project = projects.find(p => p.id === effectiveProjectId);
-  
-  useEffect(() => {
-    // Set up an event listener for share API
-    const handleClickOutside = (event: MouseEvent) => {
-      if (controlsRef.current && !controlsRef.current.contains(event.target as Node)) {
-        setShowControls(false);
-      }
-    };
 
-    // Only add listener if controls are showing
-    if (showControls) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside, { passive: true });
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, [showControls]);
-  
-  // Show status message for 3 seconds then auto-hide
   useEffect(() => {
     if (statusMessage) {
-      const timer = setTimeout(() => {
-        setStatusMessage(null);
-      }, 3000);
-      
+      const timer = setTimeout(() => setStatusMessage(null), 3000);
       return () => clearTimeout(timer);
     }
   }, [statusMessage]);
-  
+
   if (!project) {
     return (
-      <div className="p-4 bg-red-50 rounded-lg">
-        <p className="text-red-600">Project not found.</p>
+      <div style={{ padding: 16, background: '#FEF2F2', borderRadius: 8 }}>
+        <p style={{ color: '#DC2626' }}>Project not found.</p>
       </div>
     );
   }
 
-  // Get company, driver and car type details
   const company = companies.find(c => c.id === project.company);
   const driver = drivers.find(d => d.id === project.driver);
   const carType = carTypes.find(c => c.id === project.carType);
-  
-  // Format date for display
-  const formattedDate = new Date(project.date).toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
 
-  // Copy voucher text to clipboard
+  // Payment modelling
+  const totalFare = project.price;
+  const paidOnline = project.paymentStatus === 'paid' ? totalFare : 0;
+  const balanceDue = totalFare - paidOnline;
+
+  // Date formatting: "Fri 11 Sep 2026"
+  const dateObj = new Date(project.date + 'T00:00:00');
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const formattedDate = `${dayNames[dateObj.getDay()]} ${dateObj.getDate()} ${monthNames[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+
+  // Time: strip seconds
+  const formattedTime = project.time ? project.time.replace(/:\d{2}$/, '') : '';
+
+  // Location parsing helper
+  function parseLocation(loc: string): { venue: string; street: string; city: string } {
+    if (!loc) return { venue: '', street: '', city: '' };
+    const parts = loc.split(',').map(s => s.trim());
+    if (parts.length >= 3) {
+      return { venue: parts[0], street: parts[1], city: parts.slice(2).join(', ') };
+    }
+    if (parts.length === 2) {
+      return { venue: parts[0], street: '', city: parts[1] };
+    }
+    return { venue: loc, street: '', city: '' };
+  }
+
+  const pickup = parseLocation(project.pickupLocation);
+  const dropoff = parseLocation(project.dropoffLocation);
+
+  const fmtEur = (n: number) => `€${n.toFixed(2)}`;
+
+  // ── Share functions ──
+
   const copyToClipboard = () => {
-    const voucherText = `
-TRANSFER VOUCHER #${project.bookingId || 'N/A'}
----------------------------------------
-${company?.name || 'Company'}
-Date: ${formattedDate}
-Time: ${project.time}
+    const text = [
+      `TRANSFER VOUCHER #${project.bookingId || 'N/A'}`,
+      `Date: ${formattedDate}`,
+      `Time: ${formattedTime}`,
+      `Client: ${project.clientName}`,
+      `Phone: ${project.clientPhone}`,
+      `Pickup: ${project.pickupLocation}`,
+      `Dropoff: ${project.dropoffLocation}`,
+      `Passengers: ${project.passengers}`,
+      `Vehicle: ${carType?.name || 'Standard'}`,
+      `Driver: ${driver?.name || 'TBA'}`,
+      driver?.phone ? `Driver Phone: ${driver.phone}` : '',
+      `Total: ${fmtEur(totalFare)}`,
+      balanceDue > 0 ? `Balance due to driver: ${fmtEur(balanceDue)}` : 'Fully paid online',
+      project.description ? `Notes: ${project.description}` : '',
+    ].filter(Boolean).join('\n');
 
-CLIENT INFORMATION
-Name: ${project.clientName}
-Phone: ${project.clientPhone}
-
-TRANSFER DETAILS
-Pickup: ${project.pickupLocation}
-Dropoff: ${project.dropoffLocation}
-Passengers: ${project.passengers}
-Vehicle: ${carType?.name || 'Standard'}
-
-DRIVER
-Name: ${driver?.name || 'TBA'}
-Phone: ${driver?.phone || 'TBA'}
-
-BOOKING REFERENCE: ${project.bookingId || 'N/A'}
----------------------------------------
-${project.description ? `Notes: ${project.description}` : ''}
-    `.trim();
-    
-    navigator.clipboard.writeText(voucherText)
-      .then(() => {
-        setStatusMessage({
-          text: 'Copied to clipboard!',
-          type: 'success'
-        });
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch(err => {
-        console.error('Failed to copy:', err);
-        setStatusMessage({
-          text: 'Failed to copy to clipboard',
-          type: 'error'
-        });
-      });
+    navigator.clipboard.writeText(text).then(() => {
+      setStatusMessage({ text: 'Copied!', type: 'success' });
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => setStatusMessage({ text: 'Failed to copy', type: 'error' }));
   };
 
-  // WhatsApp share function
   const shareToWhatsApp = () => {
-    const voucherText = `🚗 *TRANSFER VOUCHER* #${project.bookingId || 'N/A'}
+    const text = `🚗 *TRANSFER VOUCHER* #${project.bookingId || 'N/A'}
 
 📅 *Date:* ${formattedDate}
-🕐 *Time:* ${project.time}
+🕐 *Time:* ${formattedTime}
 
 👤 *Client:* ${project.clientName}
 📞 *Phone:* ${project.clientPhone}
@@ -148,662 +122,404 @@ ${project.description ? `Notes: ${project.description}` : ''}
 🚗 *Driver:* ${driver?.name || 'TBA'}
 ${driver?.phone ? `📞 *Driver Phone:* ${driver.phone}` : ''}
 
-💰 *Price:* €${project.price.toFixed(2)}
-${project.paymentStatus === 'paid' ? '✅ *Payment:* Paid' : '💳 *Payment:* To be charged'}
+💰 *Total fare:* ${fmtEur(totalFare)}
+${balanceDue > 0 ? `💵 *Balance due to driver:* ${fmtEur(balanceDue)}` : '✅ *Fully paid online*'}
 
-${project.description ? `📝 *Notes:* ${project.description}` : ''}
+${project.description ? `📝 *Notes:* ${project.description}` : ''}`;
 
----
-${company?.name || 'Transportation Service'}`;
-
-    // Encode the message for URL
-    const encodedMessage = encodeURIComponent(voucherText);
-    
-    // Try WhatsApp Web first (works on desktop and mobile web)
-    const whatsappWebUrl = `https://wa.me/?text=${encodedMessage}`;
-    
-    // For mobile devices, try the WhatsApp app scheme first
+    const encoded = encodeURIComponent(text);
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-      const whatsappAppUrl = `whatsapp://send?text=${encodedMessage}`;
-      
-      // Try to open WhatsApp app first, fallback to web
-      const tempLink = document.createElement('a');
-      tempLink.href = whatsappAppUrl;
-      tempLink.click();
-      
-      // Fallback to WhatsApp Web after a short delay if app doesn't open
-      setTimeout(() => {
-        window.open(whatsappWebUrl, '_blank');
-      }, 1000);
+      const link = document.createElement('a');
+      link.href = `whatsapp://send?text=${encoded}`;
+      link.click();
+      setTimeout(() => window.open(`https://wa.me/?text=${encoded}`, '_blank'), 1000);
     } else {
-      // Desktop - open WhatsApp Web
-      window.open(whatsappWebUrl, '_blank');
+      window.open(`https://wa.me/?text=${encoded}`, '_blank');
     }
-    
-    setStatusMessage({
-      text: 'Opening WhatsApp...',
-      type: 'success'
-    });
+    setStatusMessage({ text: 'Opening WhatsApp...', type: 'success' });
   };
 
-  // Web Share API for mobile
-  const shareVoucher = async () => {
-    if (!navigator.share) {
-      // Fallback to copy
-      copyToClipboard();
-      return;
-    }
+  const printVoucher = () => window.print();
 
-    try {
-      await navigator.share({
-        title: `Transfer Voucher #${project.bookingId || 'N/A'}`,
-        text: `Transfer details for ${project.clientName} on ${formattedDate} at ${project.time}`,
-        url: window.location.href
-      });
-      setStatusMessage({
-        text: 'Shared successfully!',
-        type: 'success'
-      });
-    } catch (err) {
-      console.error('Share failed:', err);
-      // User probably canceled
-      if (err instanceof Error && err.name !== 'AbortError') {
-        setStatusMessage({
-          text: 'Failed to share',
-          type: 'error'
-        });
-      }
-    }
-  };
-
-  // Print the voucher
-  const printVoucher = () => {
-    const printContent = document.createElement('div');
-    
-    if (voucherRef.current) {
-      printContent.innerHTML = voucherRef.current.innerHTML;
-      const originalBody = document.body.innerHTML;
-      document.body.innerHTML = `
-        <style>
-          @page { size: 80mm 210mm; margin: 0; }
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 10mm; width: 80mm; margin: 0; background: white; }
-          .voucher-header { margin-bottom: 15px; }
-          .voucher-section { margin-bottom: 12px; }
-          .voucher-section h3 { margin-bottom: 5px; border-bottom: 1px solid #ddd; padding-bottom: 5px; font-size: 14px; }
-          .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
-          .info-label { font-size: 11px; color: #666; }
-          .info-value { font-size: 13px; }
-          .voucher-footer { margin-top: 15px; text-align: center; font-size: 10px; color: #666; }
-          @media print {
-            body { padding: 10mm; width: 80mm; }
-            button { display: none; }
-          }
-        </style>
-        <div class="voucher-print-container">
-          ${printContent.innerHTML}
-        </div>
-      `;
-      window.print();
-      document.body.innerHTML = originalBody;
-    }
-  };
-
-  
-
-  // Generate download URL for a text file
-  const generateDownloadUrl = () => {
-    const voucherText = `
-TRANSFER VOUCHER #${project.bookingId || 'N/A'}
----------------------------------------
-${company?.name || 'Company'}
-Date: ${formattedDate}
-Time: ${project.time}
-
-CLIENT INFORMATION
-Name: ${project.clientName}
-Phone: ${project.clientPhone}
-
-TRANSFER DETAILS
-Pickup: ${project.pickupLocation}
-Dropoff: ${project.dropoffLocation}
-Passengers: ${project.passengers}
-Vehicle: ${carType?.name || 'Standard'}
-
-DRIVER
-Name: ${driver?.name || 'TBA'}
-Phone: ${driver?.phone || 'TBA'}
-
-BOOKING REFERENCE: ${project.bookingId || 'N/A'}
----------------------------------------
-${project.description ? `Notes: ${project.description}` : ''}
-    `.trim();
-    
-    const blob = new Blob([voucherText], { type: 'text/plain' });
-    return URL.createObjectURL(blob);
-  };
-
-  // Generate the voucher as an image
   const generateVoucherImage = async (): Promise<string | null> => {
     if (!voucherRef.current) return null;
-    
     try {
-      // Hide controls before capturing
-      const controlsVisible = showControls;
-      setShowControls(false);
-      
-      // Wait a bit for UI to update
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Add padding and styling for the image
-      const originalPadding = voucherRef.current.style.padding;
-      const originalBackground = voucherRef.current.style.backgroundColor;
-      
-      voucherRef.current.style.padding = '16px';
-      voucherRef.current.style.backgroundColor = 'white';
-      
-      // Generate image
-      const options = {
+      await new Promise(r => setTimeout(r, 100));
+      const opts = {
         quality: 0.95,
-        backgroundColor: 'white',
-        width: voucherRef.current.offsetWidth,
-        height: voucherRef.current.offsetHeight,
-        canvasWidth: voucherRef.current.offsetWidth * 2,
-        canvasHeight: voucherRef.current.offsetHeight * 2,
+        backgroundColor: '#FFFFFF',
         pixelRatio: 2,
-        skipFonts: true, // Skip fonts to improve performance
+        skipFonts: true,
       };
-      
-      let dataUrl;
-      if (imageFormat === 'png') {
-        dataUrl = await toPng(voucherRef.current, options);
-      } else {
-        dataUrl = await toJpeg(voucherRef.current, options);
-      }
-      
-      // Reset styles
-      voucherRef.current.style.padding = originalPadding;
-      voucherRef.current.style.backgroundColor = originalBackground;
-      
-      // Restore controls if they were visible
-      if (controlsVisible) {
-        setShowControls(true);
-      }
-      
-      return dataUrl;
-    } catch (error) {
-      console.error('Error generating voucher image:', error);
+      return imageFormat === 'png'
+        ? await toPng(voucherRef.current, opts)
+        : await toJpeg(voucherRef.current, opts);
+    } catch (e) {
+      console.error('Image gen error:', e);
       return null;
     }
   };
 
-  // Generate and download the voucher as an image
   const downloadAsImage = async () => {
-    if (!voucherRef.current) return;
-    
     try {
       setIsGeneratingImage(true);
-      setStatusMessage({
-        text: 'Generating image...',
-        type: 'info'
-      });
-      
-      const dataUrl = await generateVoucherImage();
-      
-      if (!dataUrl) {
-        throw new Error('Failed to generate image');
-      }
-      
-      // For mobile devices, use FileSaver to download directly
+      setStatusMessage({ text: 'Generating image...', type: 'info' });
+      const url = await generateVoucherImage();
+      if (!url) throw new Error('Failed');
+
       if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         try {
-          // Convert data URL to blob
-          const response = await fetch(dataUrl);
-          const blob = await response.blob();
-          
-          // Save using FileSaver
-          saveAs(blob, `voucher-${project.bookingId || 'transfer'}.${imageFormat}`);
-          
-          setStatusMessage({
-            text: 'Image saved successfully!',
-            type: 'success'
-          });
-        } catch (error) {
-          console.error('Error saving with FileSaver:', error);
-          // Fall back to showing preview
-          setImagePreview(dataUrl);
+          const r = await fetch(url);
+          saveAs(await r.blob(), `voucher-${project.bookingId || 'transfer'}.${imageFormat}`);
+          setStatusMessage({ text: 'Image saved!', type: 'success' });
+        } catch {
+          setImagePreview(url);
         }
       } else {
-        // Desktop behavior - direct download
-        const link = document.createElement('a');
-        link.download = `voucher-${project.bookingId || 'transfer'}.${imageFormat}`;
-        link.href = dataUrl;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        setStatusMessage({
-          text: 'Image downloaded!',
-          type: 'success'
-        });
+        const a = document.createElement('a');
+        a.download = `voucher-${project.bookingId || 'transfer'}.${imageFormat}`;
+        a.href = url;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setStatusMessage({ text: 'Image downloaded!', type: 'success' });
       }
-    } catch (error) {
-      console.error('Error generating image:', error);
-      setStatusMessage({
-        text: 'Failed to generate image',
-        type: 'error'
-      });
+    } catch {
+      setStatusMessage({ text: 'Failed to generate image', type: 'error' });
     } finally {
       setIsGeneratingImage(false);
     }
   };
 
-  // Download image directly from preview
   const downloadImageFromPreview = async () => {
     if (!imagePreview) return;
-    
     try {
-      // Convert data URL to blob
-      const response = await fetch(imagePreview);
-      const blob = await response.blob();
-      
-      // Use FileSaver for better mobile compatibility
-      saveAs(blob, `voucher-${project.bookingId || 'transfer'}.${imageFormat}`);
-      
-      setStatusMessage({
-        text: 'Image saved successfully!',
-        type: 'success'
-      });
+      const r = await fetch(imagePreview);
+      saveAs(await r.blob(), `voucher-${project.bookingId || 'transfer'}.${imageFormat}`);
+      setStatusMessage({ text: 'Image saved!', type: 'success' });
       setImagePreview(null);
-    } catch (error) {
-      console.error('Error downloading image:', error);
-      setStatusMessage({
-        text: 'Failed to download image',
-        type: 'error'
-      });
+    } catch {
+      setStatusMessage({ text: 'Failed to download', type: 'error' });
     }
   };
 
-  // Share image from preview
   const shareImageFromPreview = async () => {
     if (!imagePreview || !navigator.share) return;
-    
     try {
-      // Convert data URL to blob
-      const response = await fetch(imagePreview);
-      const blob = await response.blob();
-      
-      // Create file object
-      const file = new File([blob], `voucher-${project.bookingId || 'transfer'}.${imageFormat}`, { 
-        type: imageFormat === 'png' ? 'image/png' : 'image/jpeg' 
+      const r = await fetch(imagePreview);
+      const blob = await r.blob();
+      const file = new File([blob], `voucher-${project.bookingId || 'transfer'}.${imageFormat}`, {
+        type: imageFormat === 'png' ? 'image/png' : 'image/jpeg',
       });
-      
-      // Share the file
-      await navigator.share({
-        files: [file],
-        title: `Transfer Voucher #${project.bookingId || 'N/A'}`,
-      });
-      
-      setStatusMessage({
-        text: 'Image shared successfully!',
-        type: 'success'
-      });
+      await navigator.share({ files: [file], title: `Transfer Voucher #${project.bookingId || 'N/A'}` });
+      setStatusMessage({ text: 'Shared!', type: 'success' });
       setImagePreview(null);
-    } catch (error) {
-      console.error('Error sharing image:', error);
-      if (error instanceof Error && error.name !== 'AbortError') {
-        setStatusMessage({
-          text: 'Failed to share image',
-          type: 'error'
-        });
+    } catch (e) {
+      if (e instanceof Error && e.name !== 'AbortError') {
+        setStatusMessage({ text: 'Failed to share', type: 'error' });
       }
     }
   };
 
-  // Floating action button to show/hide controls on mobile
-  const FloatingActionButton = () => (
-    <button 
-      onClick={() => setShowControls(!showControls)}
-      className="fixed bottom-20 right-4 z-50 bg-green-500 text-white rounded-full p-3 shadow-lg md:hidden"
-      aria-label={showControls ? "Hide controls" : "Show controls"}
-    >
-      {showControls ? (
-        <X className="h-6 w-6" />
-      ) : (
-        <FileImage className="h-6 w-6" />
-      )}
-    </button>
-  );
-
   return (
-    <div className={`${displayMode === 'page' ? 'min-h-screen bg-gray-50 pt-16' : ''}`}>
+    <div className={displayMode === 'page' ? 'min-h-screen pt-16 pb-8 px-4' : ''} style={{ background: displayMode === 'page' ? '#F2F7F5' : undefined }}>
       {displayMode === 'page' && (
-        <div className="max-w-md mx-auto px-4 py-2">
+        <div style={{ maxWidth: 680, margin: '0 auto 12px', padding: '0 4px' }}>
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-2"
+            className="inline-flex items-center justify-center"
+            style={{ color: '#6E837B', fontSize: 14, fontFamily: "'Barlow', sans-serif", background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 mr-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}>
+              <path d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             Back
           </button>
-          <h2 className="text-xl font-bold mb-2">Transfer Voucher</h2>
         </div>
       )}
-      
-      <div className={displayMode === 'page' ? "max-w-md mx-auto px-4 pb-6" : ""}>
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden relative">
-          {/* Mobile-specific floating action button */}
-          {displayMode === 'page' && <FloatingActionButton />}
-          
-          {/* Status message toast */}
-          {statusMessage && (
-            <div 
-              className={`fixed top-20 right-2 left-2 md:left-auto md:right-4 z-50 p-3 rounded-lg shadow-lg max-w-xs mx-auto md:mx-0 transition-all duration-300 flex items-center justify-between ${
-                statusMessage.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 
-                statusMessage.type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' : 
-                'bg-blue-100 text-blue-800 border border-blue-200'
-              }`}
-            >
-              <span>{statusMessage.text}</span>
-              <button 
-                onClick={() => setStatusMessage(null)}
-                className="ml-2 text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-4 h-4" />
+
+      {/* Status toast */}
+      {statusMessage && (
+        <div
+          style={{
+            position: 'fixed', top: 80, right: 16, left: 16, zIndex: 50, maxWidth: 340, margin: '0 auto',
+            padding: '10px 16px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+            background: statusMessage.type === 'success' ? '#E6F4EE' : statusMessage.type === 'error' ? '#FEF2F2' : '#EFF6FF',
+            color: statusMessage.type === 'success' ? '#046C4E' : statusMessage.type === 'error' ? '#DC2626' : '#2563EB',
+            border: `1px solid ${statusMessage.type === 'success' ? '#D9E4DF' : statusMessage.type === 'error' ? '#FECACA' : '#BFDBFE'}`,
+          }}
+        >
+          <span>{statusMessage.text}</span>
+          <button onClick={() => setStatusMessage(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'inherit', display: 'inline-flex' }}>
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Image preview modal */}
+      {imagePreview && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: '#fff', borderRadius: 12, maxWidth: 480, width: '100%', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #D9E4DF' }}>
+              <span style={{ fontWeight: 600, fontSize: 15, color: '#0B1A15' }}>Your Voucher</span>
+              <button onClick={() => setImagePreview(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'inline-flex' }}>
+                <X size={18} />
               </button>
             </div>
-          )}
-
-          {/* Image Preview Modal for Mobile */}
-          {imagePreview && (
-            <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex flex-col items-center justify-center p-4">
-              <div className="bg-white rounded-lg max-w-md w-full overflow-hidden">
-                <div className="flex justify-between items-center border-b p-3">
-                  <h3 className="text-lg font-medium">Your Voucher</h3>
-                  <button 
-                    onClick={() => setImagePreview(null)}
-                    className="p-1 rounded-full"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                
-                <div className="bg-gray-100 overflow-hidden">
-                  <img 
-                    src={imagePreview} 
-                    alt="Voucher" 
-                    className="w-full h-auto"
-                  />
-                </div>
-                
-                <div className="p-4 space-y-3">
-                  <button
-                    onClick={downloadImageFromPreview}
-                    className="w-full py-3 bg-green-500 text-white rounded-lg font-medium flex items-center justify-center"
-                  >
-                    <Download className="w-5 h-5 mr-2" />
-                    Save to Device
-                  </button>
-                  
-                  {navigator.share && (
-                    <button
-                      onClick={shareImageFromPreview}
-                      className="w-full py-3 bg-blue-500 text-white rounded-lg font-medium flex items-center justify-center"
-                    >
-                      <Share2 className="w-5 h-5 mr-2" />
-                      Share Voucher
-                    </button>
-                  )}
-                  
-                  <button
-                    onClick={() => setImagePreview(null)}
-                    className="w-full py-3 bg-gray-100 text-gray-800 rounded-lg font-medium"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
+            <div style={{ background: '#F2F7F5' }}>
+              <img src={imagePreview} alt="Voucher preview" style={{ width: '100%', height: 'auto', display: 'block' }} />
             </div>
-          )}
-
-          {/* Voucher Header with Controls */}
-          <div className="bg-green-500 text-white px-4 py-3 flex justify-between items-center no-print">
-            <h3 className="font-semibold">Transfer Voucher</h3>
-            
-            {/* Controls - hidden on mobile unless activated */}
-            <div 
-              ref={controlsRef}
-              className={`${
-                !showControls && displayMode === 'page' ? 'hidden md:flex' : 'flex'
-              } space-x-3`}
-            >
-              {shareMode === null && (
-                <>
-                  <button
-                    onClick={shareToWhatsApp}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-green-400 active:bg-green-600 text-white"
-                    title="Share voucher directly to WhatsApp - client can save or print"
-                  >
-                    <MessageCircle className="h-6 w-6" />
-                    <span className="text-sm font-medium">Share on WhatsApp</span>
-                  </button>
-                  
-                  <button
-                    onClick={downloadAsImage}
-                    disabled={isGeneratingImage}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-green-400 active:bg-green-600 disabled:opacity-50 text-white"
-                    title="Save voucher as image file - perfect for sharing via email or messaging"
-                  >
-                    <Save className="h-6 w-6" />
-                    <span className="text-sm font-medium">Save as Image</span>
-                  </button>
-                  
-                  <button
-                    onClick={printVoucher}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-green-400 active:bg-green-600 text-white"
-                    title="Print voucher on paper - give to client or keep for records"
-                  >
-                    <Printer className="h-6 w-6" />
-                    <span className="text-sm font-medium">Print Voucher</span>
-                  </button>
-                </>
+            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button onClick={downloadImageFromPreview} className="inline-flex items-center justify-center" style={{ width: '100%', padding: '12px 16px', borderRadius: 8, background: '#046C4E', color: '#fff', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                <Download size={16} style={{ marginRight: 8 }} /> Save to Device
+              </button>
+              {navigator.share && (
+                <button onClick={shareImageFromPreview} className="inline-flex items-center justify-center" style={{ width: '100%', padding: '12px 16px', borderRadius: 8, background: '#0B1A15', color: '#fff', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                  <Share2 size={16} style={{ marginRight: 8 }} /> Share
+                </button>
               )}
-              
+              <button onClick={() => setImagePreview(null)} style={{ width: '100%', padding: '10px 16px', borderRadius: 8, background: '#F2F7F5', color: '#35453F', border: '1px solid #D9E4DF', fontWeight: 500, fontSize: 14, cursor: 'pointer' }}>
+                Cancel
+              </button>
             </div>
           </div>
-          
-          
+        </div>
+      )}
 
-          {/* Image format selector - hidden on mobile to simplify UI */}
-          {shareMode === null && showControls && (
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 flex justify-end space-x-4 hidden md:flex no-print">
-              <div className="flex items-center text-sm">
-                <span className="mr-2 text-gray-600">Image format:</span>
-                <select 
-                  value={imageFormat}
-                  onChange={(e) => setImageFormat(e.target.value as 'png' | 'jpeg')}
-                  className="bg-white border border-gray-300 rounded px-2 py-1 text-sm"
-                >
-                  <option value="jpeg">JPEG</option>
-                  <option value="png">PNG</option>
-                </select>
+      {/* ═══ VOUCHER SHEET ═══ */}
+      <div className="voucher-sheet" ref={voucherRef}>
+
+        {/* Controls bar */}
+        <div className="v-controls v-no-print">
+          <button onClick={shareToWhatsApp}>
+            <MessageCircle size={15} /> WhatsApp
+          </button>
+          <button onClick={downloadAsImage} disabled={isGeneratingImage}>
+            <Save size={15} /> {isGeneratingImage ? 'Saving...' : 'Image'}
+          </button>
+          <button onClick={copyToClipboard}>
+            {copied ? <Check size={15} /> : <Copy size={15} />} {copied ? 'Copied' : 'Copy'}
+          </button>
+          <button onClick={printVoucher} className="v-btn-primary">
+            <Printer size={15} /> Print
+          </button>
+        </div>
+
+        {/* ── Masthead ── */}
+        <div className="v-masthead">
+          <div className="v-masthead-left">
+            <div className="v-wordmark">
+              RIDE<span className="v-wordmark-connect">CONNECT</span>
+            </div>
+            <div className="v-masthead-sub">
+              {company?.name || 'Transfer Service'} &middot; {company?.phone || ''}
+            </div>
+          </div>
+          <div className="v-masthead-right">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+              <div className="v-status-pill">
+                <span className="v-status-dot" />
+                Confirmed
+              </div>
+              <div className="v-ref-block">
+                <span className="v-label" style={{ color: 'rgba(255,255,255,.45)' }}>Booking reference</span>
+                <span className="v-ref-value">{project.bookingId || 'N/A'}</span>
               </div>
             </div>
-          )}
-
-          {/* Voucher Content */}
-          <div ref={voucherRef} className="p-4">
-            {/* Header with Logo and Reference */}
-            <div className="flex justify-between items-start border-b border-gray-200 pb-3 mb-3">
-              <div className="flex items-center">
-                <div className="bg-green-500 text-white p-2 rounded-full mr-3 flex-shrink-0 w-10 h-10 flex items-center justify-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M20 6L9 17l-5-5"></path>
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="font-bold text-lg">{company?.name || 'RIDECONNECT'}</h2>
-                  <p className="text-xs text-gray-500">{company?.phone || '+38670832530'}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs font-medium text-gray-500">Booking Ref</div>
-                <div className="text-green-600 font-mono font-bold">#{project.bookingId || 'N/A'}</div>
-              </div>
-            </div>
-
-            {/* Transfer Details Section */}
-            <div className="mb-3 bg-gray-50 p-3 rounded">
-              <h3 className="font-medium mb-2 text-gray-700">Transfer Details</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="text-xs text-gray-500">Date</div>
-                  <div className="font-medium">{formattedDate.split(',')[0]}, {formattedDate.split(',')[1]}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">Time</div>
-                  <div className="font-medium">{project.time}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Client Information */}
-            <div className="mb-3">
-              <h3 className="font-medium mb-2 text-gray-700">Client Information</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="text-xs text-gray-500">Name</div>
-                  <div className="font-medium">{project.clientName}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">Phone</div>
-                  <div className="font-medium">{project.clientPhone}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Pickup & Dropoff */}
-            <div className="mb-3">
-              <h3 className="font-medium mb-2 text-gray-700">Pickup & Dropoff</h3>
-              <div className="space-y-2">
-                <div className="bg-gray-50 p-2 rounded">
-                  <div className="text-xs text-gray-500">Pickup Location</div>
-                  <div className="font-medium break-words">{project.pickupLocation}</div>
-                </div>
-                <div className="bg-gray-50 p-2 rounded">
-                  <div className="text-xs text-gray-500">Dropoff Location</div>
-                  <div className="font-medium break-words">{project.dropoffLocation}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Additional Details */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <div className="text-xs text-gray-500">Passengers</div>
-                <div className="font-medium">{project.passengers}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500">Vehicle Type</div>
-                <div className="font-medium">{carType?.name || 'STANDARD'}</div>
-              </div>
-            </div>
-
-            {/* Driver Information */}
-            <div className="mb-3 border-t border-gray-200 pt-3">
-              <h3 className="font-medium mb-2 text-gray-700">Your Driver</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="text-xs text-gray-500">Name</div>
-                  <div className="font-medium">{driver?.name || 'To be assigned'}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">Phone</div>
-                  <div className="font-medium">{driver?.phone || 'N/A'}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Payment Information */}
-            <div className="mb-3 border-t border-gray-200 pt-3">
-              <h3 className="font-medium mb-2 text-gray-700">Payment Information</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="text-xs text-gray-500">Price</div>
-                  <div className="font-medium text-green-600 text-lg">€{project.price.toFixed(2)}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">Status</div>
-                  <div className="font-medium">
-                    {project.paymentStatus === 'paid' ? (
-                      <span className="text-green-600">Paid</span>
-                    ) : (
-                      <span className="text-yellow-600">To be charged</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Notes */}
-            {project.description && (
-              <div className="mb-3">
-                <h3 className="font-medium mb-2 text-gray-700">Notes</h3>
-                <div className="text-gray-600 text-sm bg-gray-50 p-3 rounded break-words">{project.description}</div>
-              </div>
-            )}
-
-            {/* Footer with terms */}
-            <div className="border-t border-gray-200 pt-3 text-xs text-gray-500 text-center">
-              Please show this voucher to your driver. For assistance, contact us at {company?.phone || 'company phone'}. 
-              Thank you for choosing {company?.name || 'our services'}.
+            <div className="v-qr" role="img" aria-label={`QR code for booking ${project.bookingId || 'N/A'}`}>
+              <svg viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Simplified QR placeholder */}
+                <rect width="21" height="21" fill="#fff"/>
+                <rect x="1" y="1" width="7" height="7" rx="1" fill="#0B1A15"/>
+                <rect x="2" y="2" width="5" height="5" rx=".5" fill="#fff"/>
+                <rect x="3" y="3" width="3" height="3" rx=".5" fill="#0B1A15"/>
+                <rect x="13" y="1" width="7" height="7" rx="1" fill="#0B1A15"/>
+                <rect x="14" y="2" width="5" height="5" rx=".5" fill="#fff"/>
+                <rect x="15" y="3" width="3" height="3" rx=".5" fill="#0B1A15"/>
+                <rect x="1" y="13" width="7" height="7" rx="1" fill="#0B1A15"/>
+                <rect x="2" y="14" width="5" height="5" rx=".5" fill="#fff"/>
+                <rect x="3" y="15" width="3" height="3" rx=".5" fill="#0B1A15"/>
+                <rect x="9" y="1" width="2" height="2" fill="#0B1A15"/>
+                <rect x="9" y="5" width="2" height="2" fill="#0B1A15"/>
+                <rect x="9" y="9" width="2" height="2" fill="#0B1A15"/>
+                <rect x="11" y="9" width="2" height="2" fill="#0B1A15"/>
+                <rect x="13" y="9" width="2" height="2" fill="#0B1A15"/>
+                <rect x="9" y="13" width="2" height="2" fill="#0B1A15"/>
+                <rect x="13" y="13" width="2" height="2" fill="#0B1A15"/>
+                <rect x="15" y="11" width="2" height="2" fill="#0B1A15"/>
+                <rect x="17" y="13" width="2" height="2" fill="#0B1A15"/>
+                <rect x="11" y="15" width="2" height="2" fill="#0B1A15"/>
+                <rect x="15" y="17" width="4" height="2" fill="#0B1A15"/>
+                <rect x="17" y="15" width="2" height="2" fill="#0B1A15"/>
+              </svg>
             </div>
           </div>
         </div>
 
-        {/* Simplified image download button for mobile */}
-        {displayMode === 'page' && (
-          <div className="fixed bottom-28 left-0 right-0 flex justify-center z-40 no-print md:hidden">
-            <button
-              onClick={downloadAsImage}
-              disabled={isGeneratingImage}
-              className="flex items-center justify-center bg-green-500 text-white px-4 py-3 rounded-full shadow-lg"
-            >
-              <Save className="w-5 h-5 mr-2" />
-              <span>{isGeneratingImage ? 'Saving...' : 'Save Voucher'}</span>
-            </button>
+        {/* ── Journey strip ── */}
+        <div className="v-strip">
+          <div className="v-strip-cell">
+            <div className="v-label">Date</div>
+            <div className="v-strip-value">{formattedDate}</div>
+          </div>
+          <div className="v-strip-cell">
+            <div className="v-label">Pickup time</div>
+            <div className="v-strip-value v-mono">{formattedTime}</div>
+            <div className="v-strip-secondary">Local time</div>
+          </div>
+          <div className="v-strip-cell">
+            <div className="v-label">Vehicle</div>
+            <div className="v-strip-value">{carType?.name || 'Standard'}</div>
+          </div>
+          <div className="v-strip-cell">
+            <div className="v-label">Passengers</div>
+            <div className="v-strip-value">{project.passengers}</div>
+            {carType?.name && <div className="v-strip-secondary">Up to {project.passengers} seat{project.passengers !== 1 ? 's' : ''}</div>}
+          </div>
+        </div>
+
+        {/* ── Route timeline ── */}
+        <div className="v-route">
+          {/* Pickup */}
+          <div className="v-route-leg">
+            <div className="v-route-node">
+              <div className="v-route-dot-pickup" />
+              <div className="v-route-connector" />
+            </div>
+            <div className="v-route-content">
+              <div className="v-route-tag">
+                <span className="v-label">Pickup</span>
+                <span className="v-mono" style={{ fontSize: 11, color: 'var(--v-accent)', fontWeight: 600 }}>{formattedTime}</span>
+              </div>
+              <div className="v-route-venue">{pickup.venue}</div>
+              {pickup.street && <div className="v-route-address">{pickup.street}</div>}
+              {pickup.city && <div className="v-route-city">{pickup.city}</div>}
+            </div>
+          </div>
+
+          {/* Drop-off */}
+          <div className="v-route-leg">
+            <div className="v-route-node">
+              <div className="v-route-dot-dropoff" />
+            </div>
+            <div className="v-route-content">
+              <div className="v-route-tag">
+                <span className="v-label">Drop-off</span>
+              </div>
+              <div className="v-route-venue">{dropoff.venue}</div>
+              {dropoff.street && <div className="v-route-address">{dropoff.street}</div>}
+              {dropoff.city && <div className="v-route-city">{dropoff.city}</div>}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Passenger & Driver ── */}
+        <div className="v-people">
+          <div className="v-person">
+            <div className="v-label">Passenger</div>
+            <div className="v-person-name">{project.clientName}</div>
+            {project.clientPhone && (
+              <a href={`tel:${project.clientPhone}`} className="v-person-phone">{project.clientPhone}</a>
+            )}
+            <div className="v-person-secondary">{project.passengers} passenger{project.passengers !== 1 ? 's' : ''}</div>
+          </div>
+          <div className="v-person v-person-driver">
+            <div className="v-label">Your driver</div>
+            <div className="v-person-name">{driver?.name || 'To be assigned'}</div>
+            {driver?.phone && (
+              <a href={`tel:${driver.phone}`} className="v-person-phone">{driver.phone}</a>
+            )}
+            <div className="v-person-secondary">
+              {driver?.name ? `${carType?.name || 'Vehicle'} driver` : 'Driver details will be confirmed'}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Tear rule ── */}
+        <hr className="v-tear" />
+
+        {/* ── Payment ── */}
+        <div className="v-payment">
+          <div className="v-ledger">
+            <div className="v-ledger-row">
+              <span className="v-ledger-label">
+                Total fare &mdash; {pickup.venue} to {dropoff.venue}
+              </span>
+              <span className="v-ledger-amount">{fmtEur(totalFare)}</span>
+            </div>
+            {paidOnline > 0 && (
+              <div className="v-ledger-row">
+                <span className="v-ledger-label v-ledger-paid">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="v-ledger-check"><path d="M20 6L9 17l-5-5"/></svg>
+                  Paid online
+                </span>
+                <span className="v-ledger-amount" style={{ color: 'var(--v-accent)' }}>−{fmtEur(paidOnline)}</span>
+              </div>
+            )}
+            {balanceDue > 0 && (
+              <div className="v-ledger-row" style={{ fontWeight: 600 }}>
+                <span className="v-ledger-label" style={{ fontWeight: 600, color: 'var(--v-ink)' }}>Balance due to driver</span>
+                <span className="v-ledger-amount" style={{ color: 'var(--v-cash)' }}>{fmtEur(balanceDue)}</span>
+              </div>
+            )}
+            {balanceDue === 0 && (
+              <div className="v-ledger-row">
+                <span className="v-ledger-label" style={{ fontWeight: 600, color: 'var(--v-accent)' }}>Fully paid — nothing due</span>
+                <span className="v-ledger-amount" style={{ color: 'var(--v-accent)' }}>{fmtEur(0)}</span>
+              </div>
+            )}
+          </div>
+
+          {balanceDue > 0 ? (
+            <div className="v-balance-box">
+              <div className="v-label" style={{ color: 'var(--v-cash)' }}>Balance due to driver</div>
+              <div className="v-balance-amount">{fmtEur(balanceDue)}</div>
+              <div className="v-balance-detail">
+                Pay {driver?.name || 'your driver'} directly<br />Cash or card accepted
+              </div>
+            </div>
+          ) : (
+            <div className="v-balance-box" style={{ background: 'var(--v-accent-tint)', borderColor: '#B4DBC8' }}>
+              <div className="v-label" style={{ color: 'var(--v-accent)' }}>Payment status</div>
+              <div className="v-balance-amount" style={{ color: 'var(--v-accent)', fontSize: 28 }}>PAID</div>
+              <div className="v-balance-detail" style={{ color: 'var(--v-accent)' }}>
+                No payment due at pickup
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Notes ── */}
+        {project.description && (
+          <div className="v-notes">
+            <div className="v-label" style={{ marginBottom: 6 }}>Notes</div>
+            {project.description}
           </div>
         )}
+
+        {/* ── Footer ── */}
+        <div className="v-footer">
+          <div className="v-footer-left">
+            Show this voucher to your driver.<br />
+            Save to your phone or print a copy.
+          </div>
+          <div className="v-footer-right">
+            <div className="v-label" style={{ marginBottom: 4 }}>24/7 assistance</div>
+            {company?.phone ? (
+              <a href={`tel:${company.phone}`}>{company.phone}</a>
+            ) : (
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 500, color: 'var(--v-accent)' }}>Contact dispatch</span>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Close button for modal mode */}
       {displayMode === 'modal' && onClose && (
-        <div className="mt-4 flex justify-end">
+        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+            style={{ padding: '8px 20px', borderRadius: 8, background: '#F2F7F5', color: '#35453F', border: '1px solid #D9E4DF', fontWeight: 500, fontSize: 14, cursor: 'pointer', fontFamily: "'Barlow', sans-serif" }}
           >
             Close
           </button>
