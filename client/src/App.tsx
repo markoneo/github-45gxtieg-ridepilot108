@@ -48,6 +48,7 @@ function AppContent() {
   
   // Check if the route is a dashboard route where footer should be hidden
   const isDashboardRoute =
+    location.pathname === '/' ||
     location.pathname.includes('/dashboard') ||
     location.pathname.includes('/new-project') ||
     location.pathname.includes('/edit-project') ||
@@ -94,9 +95,9 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {!location.pathname.includes('/driver') && !location.pathname.includes('/admin') && !location.pathname.includes('/dashboard') && <Navbar />}
+      {location.pathname !== '/' && !location.pathname.includes('/driver') && !location.pathname.includes('/admin') && !location.pathname.includes('/dashboard') && <Navbar />}
       
-      <main className={`flex-grow ${!location.pathname.includes('/driver') && !location.pathname.includes('/admin') && !location.pathname.includes('/dashboard') ? 'pt-16' : ''}`}>
+      <main className={`flex-grow ${location.pathname !== '/' && !location.pathname.includes('/driver') && !location.pathname.includes('/admin') && !location.pathname.includes('/dashboard') ? 'pt-16' : ''}`}>
         <ErrorBoundary>
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
