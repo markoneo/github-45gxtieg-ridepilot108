@@ -66,6 +66,7 @@ export default function DispatchLayout({
   rideCount,
   onRefresh,
   isRefreshing,
+  pageTitle,
 }: DispatchLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
