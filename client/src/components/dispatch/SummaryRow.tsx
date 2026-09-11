@@ -21,12 +21,13 @@ export default function SummaryRow({
   const { projects } = useData();
 
   const completed = useMemo(() => {
-    const all = projects.filter(p => p.status === 'completed');
-    const total = all.reduce((s, p) => s + p.price, 0);
     const now = new Date();
+    const yearStart = new Date(now.getFullYear(), 0, 1);
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const thisMonth = all.filter(p => new Date(p.date) >= monthStart).length;
-    return { count: all.length, total, thisMonth };
+    const yearCompleted = projects.filter(p => p.status === 'completed' && new Date(p.date) >= yearStart);
+    const total = yearCompleted.reduce((s, p) => s + p.price, 0);
+    const thisMonth = yearCompleted.filter(p => new Date(p.date) >= monthStart).length;
+    return { count: yearCompleted.length, total, thisMonth };
   }, [projects]);
 
   return (
