@@ -551,7 +551,7 @@ export default function Hero() {
             ))}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button onClick={() => setShowLoginModal(true)} className="hidden md:inline-flex" style={{ background: 'none', border: 'none', color: V.textSec, fontSize: 13, fontWeight: 500, padding: '6px 12px', cursor: 'pointer' }}>Login</button>
+            <button onClick={() => setShowLoginModal(true)} style={{ background: 'none', border: 'none', color: V.textSec, fontSize: 13, fontWeight: 500, padding: '6px 12px', cursor: 'pointer' }}>Login</button>
             <button onClick={() => setShowSignUpModal(true)} style={{ background: V.accent, color: V.onAccent, fontSize: 13, fontWeight: 700, padding: '7px 16px', borderRadius: 9, border: 'none', cursor: 'pointer' }}>Sign Up</button>
           </div>
         </div>
