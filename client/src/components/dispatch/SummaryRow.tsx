@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useData } from '../../contexts/DataContext';
 
 interface SummaryRowProps {
   next24h: { count: number; total: number; firstPickup: string | null };
@@ -15,15 +17,27 @@ export default function SummaryRow({
   next24h, next7d, awaitingReply, noDriver, toCharge,
   onFilterAwaitingReply, onFilterNoDriver, onFilterToCharge,
 }: SummaryRowProps) {
+  const navigate = useNavigate();
+  const { projects } = useData();
+
+  const completed = useMemo(() => {
+    const all = projects.filter(p => p.status === 'completed');
+    const total = all.reduce((s, p) => s + p.price, 0);
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const thisMonth = all.filter(p => new Date(p.date) >= monthStart).length;
+    return { count: all.length, total, thisMonth };
+  }, [projects]);
+
   return (
     <div
       className="rounded-[var(--dp-radius)] summary-grid"
-      style={{ background: 'var(--dp-surface)', border: '1px solid var(--dp-border)' }}
+      style={{ background: 'var(--dp-surface)', border: '1px solid var(--dp-border)', overflow: 'hidden' }}
     >
       <style>{`
         .summary-grid > .summary-inner {
           display: grid;
-          grid-template-columns: repeat(5, 1fr);
+          grid-template-columns: repeat(6, 1fr);
         }
         @media (max-width: 1024px) {
           .summary-grid > .summary-inner {
@@ -35,6 +49,7 @@ export default function SummaryRow({
             grid-template-columns: repeat(2, 1fr);
           }
         }
+
         .summary-grid .summary-tile {
           padding: 16px 20px;
           position: relative;
@@ -43,7 +58,10 @@ export default function SummaryRow({
           align-items: stretch;
           text-align: left;
         }
-        .summary-grid .summary-tile:not(:last-child)::after {
+
+        /* Vertical divider on the right of every tile except the last in each row */
+        /* Desktop: 6 cols – hide on 6th */
+        .summary-grid .summary-tile::after {
           content: '';
           position: absolute;
           right: 0;
@@ -52,15 +70,57 @@ export default function SummaryRow({
           width: 1px;
           background: var(--dp-border);
         }
+        .summary-grid .summary-tile:nth-child(6)::after { display: none; }
+
         @media (max-width: 1024px) {
-          .summary-grid .summary-tile:nth-child(3)::after {
-            display: none;
+          /* 3-col: hide divider on 3rd, 6th */
+          .summary-grid .summary-tile:nth-child(3)::after,
+          .summary-grid .summary-tile:nth-child(6)::after { display: none; }
+          /* Horizontal divider between rows (after 3rd tile) */
+          .summary-grid .summary-tile:nth-child(n+4) {
+            border-top: 1px solid var(--dp-border);
           }
         }
         @media (max-width: 640px) {
-          .summary-grid .summary-tile:nth-child(even)::after {
-            display: none;
+          /* 2-col: hide divider on every even tile */
+          .summary-grid .summary-tile:nth-child(even)::after { display: none; }
+          /* Horizontal divider between rows (after 2nd tile) */
+          .summary-grid .summary-tile:nth-child(n+3) {
+            border-top: 1px solid var(--dp-border);
           }
+        }
+
+        /* Clickable tile hover/focus: soft inset pill */
+        .summary-grid button.summary-tile {
+          border-radius: 0;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+        }
+        .summary-grid button.summary-tile::before {
+          content: '';
+          position: absolute;
+          inset: 4px;
+          border-radius: 8px;
+          background: transparent;
+          transition: background 0.15s;
+          pointer-events: none;
+          z-index: 0;
+        }
+        .summary-grid button.summary-tile:hover::before {
+          background: var(--dp-surface-2);
+        }
+        .summary-grid button.summary-tile:focus-visible {
+          outline: none;
+        }
+        .summary-grid button.summary-tile:focus-visible::before {
+          background: var(--dp-surface-2);
+          box-shadow: inset 0 0 0 2px var(--dp-accent);
+        }
+        /* Ensure tile content sits above the ::before overlay */
+        .summary-grid button.summary-tile > * {
+          position: relative;
+          z-index: 1;
         }
       `}</style>
 
@@ -87,7 +147,7 @@ export default function SummaryRow({
         </div>
 
         {/* Awaiting reply */}
-        <button className="summary-tile text-left w-full transition-colors hover:bg-[var(--dp-surface-2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--dp-accent)]" onClick={onFilterAwaitingReply}>
+        <button className="summary-tile text-left w-full" onClick={onFilterAwaitingReply}>
           <Label>Awaiting reply</Label>
           <NumRow>
             <BigNum color={awaitingReply > 0 ? 'var(--dp-warning)' : undefined}>{awaitingReply}</BigNum>
@@ -95,7 +155,7 @@ export default function SummaryRow({
         </button>
 
         {/* No driver yet */}
-        <button className="summary-tile text-left w-full transition-colors hover:bg-[var(--dp-surface-2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--dp-accent)]" onClick={onFilterNoDriver}>
+        <button className="summary-tile text-left w-full" onClick={onFilterNoDriver}>
           <Label>No driver yet</Label>
           <NumRow>
             <BigNum>{noDriver}</BigNum>
@@ -103,12 +163,22 @@ export default function SummaryRow({
         </button>
 
         {/* To charge */}
-        <button className="summary-tile text-left w-full transition-colors hover:bg-[var(--dp-surface-2)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--dp-accent)]" onClick={onFilterToCharge}>
+        <button className="summary-tile text-left w-full" onClick={onFilterToCharge}>
           <Label>To charge</Label>
           <NumRow>
             <BigNum color={toCharge.count > 0 ? 'var(--dp-charge)' : undefined}>{toCharge.count}</BigNum>
             {toCharge.total > 0 && <Secondary color="var(--dp-charge)">{fmtEur(toCharge.total)}</Secondary>}
           </NumRow>
+        </button>
+
+        {/* Completed */}
+        <button className="summary-tile text-left w-full" onClick={() => navigate('/completed-projects')}>
+          <Label>Completed</Label>
+          <NumRow>
+            <BigNum color="var(--dp-success)">{completed.count}</BigNum>
+            <Secondary>{fmtEur(completed.total)}</Secondary>
+          </NumRow>
+          <SubLine>This month: {completed.thisMonth}</SubLine>
         </button>
       </div>
     </div>
