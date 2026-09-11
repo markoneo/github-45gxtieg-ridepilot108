@@ -38,6 +38,10 @@ export default function SummaryRow({
         .summary-grid .summary-tile {
           padding: 16px 20px;
           position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          text-align: left;
         }
         .summary-grid .summary-tile:not(:last-child)::after {
           content: '';

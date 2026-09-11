@@ -180,11 +180,8 @@ button, a, .clickable {
 }
 
 @media (max-width: 768px) {
-  button, a, .button-like {
+  button, .button-like {
     min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
   }
   
   input, select, textarea {
