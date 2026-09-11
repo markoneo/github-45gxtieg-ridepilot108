@@ -12,6 +12,18 @@ interface CarType {
   description: string;
 }
 
+const inputStyle: React.CSSProperties = {
+  background: 'var(--dp-surface)',
+  border: '1px solid var(--dp-border)',
+  borderRadius: 10,
+  padding: '9px 14px',
+  height: 40,
+  fontSize: 16,
+  color: 'var(--dp-text)',
+  width: '100%',
+  outline: 'none',
+};
+
 export default function CarTypes() {
   const navigate = useNavigate();
   const { carTypes, addCarType, deleteCarType, updateCarType } = useData();
@@ -64,73 +76,113 @@ export default function CarTypes() {
       onAdd={() => setShowForm(true)}
       addButtonText="Add Car Type"
     >
+      <div className="space-y-5">
+        {/* Form */}
         {showForm && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h3 className="text-lg font-semibold mb-4">
+          <div
+            className="p-6"
+            style={{
+              background: 'var(--dp-surface)',
+              border: '1px solid var(--dp-border)',
+              borderRadius: 'var(--dp-radius)',
+            }}
+          >
+            <h3 className="font-heading text-base mb-4" style={{ color: 'var(--dp-text)' }}>
               {editingCarType ? 'Edit Car Type' : 'Add New Car Type'}
             </h3>
             <form onSubmit={editingCarType ? handleUpdate : handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>
                   Car Type Name
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                  style={inputStyle}
                   required
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Passenger Capacity
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.capacity}
-                  onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-                  required
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>
+                    Passenger Capacity
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.capacity}
+                    onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
+                    style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>
+                    Luggage Capacity
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.luggage_capacity}
+                    onChange={(e) => setFormData({ ...formData, luggage_capacity: parseInt(e.target.value) })}
+                    style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }}
+                    required
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Luggage Capacity
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.luggage_capacity}
-                  onChange={(e) => setFormData({ ...formData, luggage_capacity: parseInt(e.target.value) })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>
                   Description
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
                   rows={3}
                   required
+                  className="outline-none w-full"
+                  style={{
+                    background: 'var(--dp-surface)',
+                    border: '1px solid var(--dp-border)',
+                    borderRadius: 10,
+                    padding: '9px 14px',
+                    fontSize: 16,
+                    color: 'var(--dp-text)',
+                    resize: 'vertical',
+                  }}
                 />
               </div>
-              <div className="flex justify-end space-x-4">
+              <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="transition-opacity hover:opacity-80"
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: 10,
+                    border: '1px solid var(--dp-border-strong)',
+                    background: 'transparent',
+                    color: 'var(--dp-text)',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    minHeight: 40,
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                  className="transition-opacity hover:opacity-90"
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: 10,
+                    background: 'var(--dp-accent)',
+                    color: 'var(--dp-on-accent)',
+                    border: 'none',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    minHeight: 40,
+                  }}
                 >
                   {editingCarType ? 'Update Car Type' : 'Add Car Type'}
                 </button>
@@ -139,61 +191,85 @@ export default function CarTypes() {
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Car Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Capacity
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Luggage
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Description
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {carTypes.map((carType) => (
-                <tr key={carType.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {carType.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {carType.capacity} passengers
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {carType.luggage_capacity} pieces
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {carType.description}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
-                    <button
-                      onClick={() => handleEdit(carType)}
-                      className="text-blue-600 hover:text-blue-900 transition-colors"
+        {/* Table */}
+        <div
+          className="overflow-hidden"
+          style={{
+            background: 'var(--dp-surface)',
+            border: '1px solid var(--dp-border)',
+            borderRadius: 'var(--dp-radius)',
+          }}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--dp-border)' }}>
+                  {['Car Type', 'Capacity', 'Luggage', 'Description', 'Actions'].map(h => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-left"
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '.05em',
+                        color: 'var(--dp-text-muted)',
+                        background: 'var(--dp-surface-2)',
+                      }}
                     >
-                      <Edit2 className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteCarType(carType.id)}
-                      className="text-red-600 hover:text-red-900 transition-colors"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </td>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {carTypes.map((carType) => (
+                  <tr
+                    key={carType.id}
+                    className="transition-colors"
+                    style={{ borderBottom: '1px solid var(--dp-border)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--dp-surface-2)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <td className="px-4 py-3 text-sm font-medium" style={{ color: 'var(--dp-text)' }}>
+                      {carType.name}
+                    </td>
+                    <td className="px-4 py-3 text-sm" style={{ color: 'var(--dp-text-secondary)', fontFamily: 'var(--font-mono)' }}>
+                      {carType.capacity} passengers
+                    </td>
+                    <td className="px-4 py-3 text-sm" style={{ color: 'var(--dp-text-secondary)', fontFamily: 'var(--font-mono)' }}>
+                      {carType.luggage_capacity} pieces
+                    </td>
+                    <td className="px-4 py-3 text-sm" style={{ color: 'var(--dp-text-muted)', maxWidth: 260 }}>
+                      {carType.description}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleEdit(carType)}
+                          className="p-1.5 rounded-md transition-opacity hover:opacity-70"
+                          style={{ color: 'var(--dp-text-secondary)' }}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCarType(carType.id)}
+                          className="p-1.5 rounded-md transition-colors"
+                          style={{ color: 'var(--dp-text-secondary)' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--dp-danger)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--dp-text-secondary)')}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
+      </div>
     </SettingsLayout>
   );
 }

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, CreditCard as Edit2, Trash2, DollarSign, Users, ChevronDown, ChevronUp, TrendingUp, Calendar, Clock, ChartBar as BarChart3, Download } from 'lucide-react';
+import { Plus, CreditCard as Edit2, Trash2, DollarSign, Users, ChevronDown, ChevronUp, TrendingUp, Calendar, Clock, ChartBar as BarChart3, Download } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import Modal from '../Modal';
+import DispatchLayout from '../dispatch/DispatchLayout';
 
 interface Payment {
   id: string;
@@ -36,6 +37,61 @@ interface MonthlyReport {
     totalPaid: number;
   };
 }
+
+const inputStyle: React.CSSProperties = {
+  background: 'var(--dp-surface)',
+  border: '1px solid var(--dp-border)',
+  borderRadius: 10,
+  padding: '9px 14px',
+  height: 40,
+  fontSize: 16,
+  color: 'var(--dp-text)',
+  width: '100%',
+  outline: 'none',
+};
+
+const btnPrimary: React.CSSProperties = {
+  padding: '9px 18px',
+  borderRadius: 10,
+  background: 'var(--dp-accent)',
+  color: 'var(--dp-on-accent)',
+  border: 'none',
+  fontSize: 14,
+  fontWeight: 600,
+  minHeight: 40,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+};
+
+const btnSecondary: React.CSSProperties = {
+  padding: '9px 18px',
+  borderRadius: 10,
+  border: '1px solid var(--dp-border-strong)',
+  background: 'transparent',
+  color: 'var(--dp-text)',
+  fontSize: 14,
+  fontWeight: 500,
+  minHeight: 40,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+};
+
+const card: React.CSSProperties = {
+  background: 'var(--dp-surface)',
+  border: '1px solid var(--dp-border)',
+  borderRadius: 'var(--dp-radius)',
+};
+
+const thStyle: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '.05em',
+  color: 'var(--dp-text-muted)',
+  background: 'var(--dp-surface-2)',
+};
 
 export default function Payments() {
   const navigate = useNavigate();
@@ -268,213 +324,319 @@ export default function Payments() {
     }
   };
 
+  const renderPaymentCard = (payment: Payment, showActions: boolean) => (
+    <div
+      key={payment.id}
+      className="flex items-center justify-between p-3"
+      style={{
+        background: 'var(--dp-surface-2)',
+        borderRadius: 10,
+      }}
+    >
+      <div className="mr-2 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold" style={{ color: 'var(--dp-text)', fontFamily: 'var(--font-mono)' }}>
+            €{payment.amount.toFixed(2)}
+          </span>
+          {payment.source === 'driver' && (
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+              style={{ background: 'var(--dp-accent-soft)', color: 'var(--dp-accent)' }}
+            >
+              Driver
+            </span>
+          )}
+        </div>
+        <div className="text-sm truncate" style={{ color: 'var(--dp-text-secondary)' }}>{payment.description}</div>
+        <div className="text-xs" style={{ color: 'var(--dp-text-muted)' }}>
+          {new Date(payment.date).toLocaleDateString()}
+        </div>
+      </div>
+      <div className="flex gap-1 flex-shrink-0">
+        {showActions && (
+          <>
+            <button
+              onClick={() => handleEdit(payment)}
+              className="p-2 rounded-lg transition-opacity hover:opacity-70"
+              style={{ color: 'var(--dp-text-secondary)' }}
+              title="Edit payment"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => completePayment(payment.id)}
+              className="p-2 rounded-lg transition-opacity hover:opacity-70"
+              style={{ color: 'var(--dp-success)' }}
+              title="Mark as paid"
+            >
+              <DollarSign className="w-4 h-4" />
+            </button>
+          </>
+        )}
+        <button
+          onClick={() => handleDelete(payment.id)}
+          className="p-2 rounded-lg transition-colors"
+          style={{ color: 'var(--dp-text-secondary)' }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--dp-danger)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--dp-text-secondary)')}
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderDriverGroup = (driver: any, type: 'pending' | 'paid') => {
+    const driverPayments = groupedPayments[driver.id];
+    const items = type === 'pending' ? driverPayments?.pending : driverPayments?.paid;
+    if (!items?.length || (selectedDriver && selectedDriver !== driver.id)) return null;
+    const isExpanded = expandedDrivers.has(driver.id);
+    const total = type === 'pending' ? driverPayments.totalPending : driverPayments.totalPaid;
+    const totalColor = type === 'pending' ? 'var(--dp-warning)' : 'var(--dp-success)';
+
+    return (
+      <div
+        key={driver.id}
+        className="overflow-hidden"
+        style={{ border: '1px solid var(--dp-border)', borderRadius: 10 }}
+      >
+        <button
+          onClick={() => toggleDriverExpanded(driver.id)}
+          className="w-full flex justify-between items-center p-3"
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                showDriverStats(driver.id);
+              }}
+              className="text-sm font-semibold hover:opacity-70 transition-opacity text-left"
+              style={{ color: 'var(--dp-text)' }}
+            >
+              {driver.name}
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold" style={{ color: totalColor, fontFamily: 'var(--font-mono)' }}>
+              €{total.toFixed(2)}
+            </span>
+            {isExpanded ? (
+              <ChevronUp className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
+            ) : (
+              <ChevronDown className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
+            )}
+          </div>
+        </button>
+        
+        <div className={`space-y-2 p-3 pt-0 ${isExpanded ? '' : 'hidden'}`}>
+          {items.map(payment => renderPaymentCard(payment, type === 'pending'))}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 space-y-4">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              Back to Dashboard
-            </button>
-            <button
-              onClick={() => setShowForm(true)}
-              className="flex items-center bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Add Payment
-            </button>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="flex flex-col sm:flex-row items-stretch gap-3">
-              <label className="flex items-center space-x-2">
-                <Users className="w-5 h-5 text-gray-500" />
-                <span className="text-gray-700 font-medium">Filter by Driver:</span>
-              </label>
-              <select
-                value={selectedDriver}
-                onChange={(e) => setSelectedDriver(e.target.value)}
-                className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-              >
-                <option value="">All Drivers</option>
-                {drivers.map((driver) => (
-                  <option key={driver.id} value={driver.id}>
-                    {driver.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+    <DispatchLayout pageTitle="Payments">
+      <div style={{ maxWidth: 1100 }} className="mx-auto space-y-5">
+        {/* Page header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <h1 className="font-heading" style={{ fontSize: 22, color: 'var(--dp-text)' }}>Payments</h1>
+          <button
+            onClick={() => setShowForm(true)}
+            className="transition-opacity hover:opacity-90"
+            style={btnPrimary}
+          >
+            <Plus className="w-4 h-4" />
+            Add Payment
+          </button>
+        </div>
+
+        {/* Driver filter */}
+        <div className="flex flex-col sm:flex-row items-stretch gap-3 p-4" style={card}>
+          <label className="flex items-center gap-2" style={{ color: 'var(--dp-text-secondary)' }}>
+            <Users className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
+            <span className="text-sm font-medium">Filter by Driver:</span>
+          </label>
+          <select
+            value={selectedDriver}
+            onChange={(e) => setSelectedDriver(e.target.value)}
+            style={{ ...inputStyle, flex: 1 }}
+          >
+            <option value="">All Drivers</option>
+            {drivers.map((driver) => (
+              <option key={driver.id} value={driver.id}>
+                {driver.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Monthly Report Toggle */}
-        <div className="mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setShowMonthlyReport(!showMonthlyReport)}
-                  className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4" style={card}>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              onClick={() => setShowMonthlyReport(!showMonthlyReport)}
+              className="transition-opacity hover:opacity-90"
+              style={btnSecondary}
+            >
+              <BarChart3 className="w-4 h-4" />
+              {showMonthlyReport ? 'Hide Monthly Report' : 'Show Monthly Report'}
+            </button>
+            
+            {showMonthlyReport && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium" style={{ color: 'var(--dp-text-secondary)' }}>Year:</label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  style={{ ...inputStyle, width: 'auto', height: 34, fontSize: 13, padding: '4px 10px' }}
                 >
-                  <BarChart3 className="w-5 h-5" />
-                  {showMonthlyReport ? 'Hide Monthly Report' : 'Show Monthly Report'}
-                </button>
-                
-                {showMonthlyReport && (
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700">Year:</label>
-                    <select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(Number(e.target.value))}
-                      className="px-3 py-1 border rounded-md focus:ring-2 focus:ring-blue-500"
-                    >
-                      {availableYears.map(year => (
-                        <option key={year} value={year}>{year}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                  {availableYears.map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
               </div>
-              
-              {showMonthlyReport && (
-                <button
-                  onClick={downloadMonthlyReport}
-                  className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
-                >
-                  <Download className="w-4 h-4" />
-                  Export CSV
-                </button>
-              )}
-            </div>
+            )}
           </div>
+          
+          {showMonthlyReport && (
+            <button
+              onClick={downloadMonthlyReport}
+              className="transition-opacity hover:opacity-90"
+              style={btnSecondary}
+            >
+              <Download className="w-4 h-4" />
+              Export CSV
+            </button>
+          )}
         </div>
 
-        {/* Monthly Report Section */}
+        {/* Monthly Report Table */}
         {showMonthlyReport && (
-          <div className="mb-8">
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-              <div className="bg-blue-50 px-6 py-4 border-b">
-                <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                  <BarChart3 className="w-6 h-6 mr-2 text-blue-600" />
-                  Monthly Payment Report - {selectedYear}
-                </h2>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Month
+          <div className="overflow-hidden" style={card}>
+            <div className="flex items-center gap-2 px-5 py-3" style={{ borderBottom: '1px solid var(--dp-border)' }}>
+              <BarChart3 className="w-5 h-5" style={{ color: 'var(--dp-accent)' }} />
+              <span className="font-heading text-base" style={{ color: 'var(--dp-text)' }}>
+                Monthly Payment Report - {selectedYear}
+              </span>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--dp-border)' }}>
+                    {['Month', 'Driver', 'Pending', 'Paid', 'Total'].map(h => (
+                      <th
+                        key={h}
+                        className="px-4 py-3 text-left"
+                        style={{
+                          ...thStyle,
+                          textAlign: ['Pending', 'Paid', 'Total'].includes(h) ? 'right' : 'left',
+                        }}
+                      >
+                        {h}
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Driver
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Pending
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Paid
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {Object.keys(monthlyReport)
-                      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
-                      .map((month) => {
-                        const monthData = monthlyReport[month];
-                        const driverKeys = Object.keys(monthData).filter(key => 
-                          key !== 'totalPending' && key !== 'totalPaid'
-                        );
-                        
-                        return (
-                          <React.Fragment key={month}>
-                            {/* Driver rows */}
-                            {driverKeys.map((driverId, index) => {
-                              const driverData = monthData[driverId];
-                              const total = driverData.pending + driverData.paid;
-                              
-                              return (
-                                <tr key={`${month}-${driverId}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {index === 0 && month}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {driverData.driverName}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-600 font-medium">
-                                    €{driverData.pending.toFixed(2)}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                                    €{driverData.paid.toFixed(2)}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                                    €{total.toFixed(2)}
-                                  </td>
-                                </tr>
-                              );
-                            })}
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.keys(monthlyReport)
+                    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+                    .map((month) => {
+                      const monthData = monthlyReport[month];
+                      const driverKeys = Object.keys(monthData).filter(key => 
+                        key !== 'totalPending' && key !== 'totalPaid'
+                      );
+                      
+                      return (
+                        <React.Fragment key={month}>
+                          {driverKeys.map((driverId, index) => {
+                            const driverData = monthData[driverId];
+                            const total = driverData.pending + driverData.paid;
                             
-                            {/* Month total row */}
-                            <tr className="bg-blue-50 border-t-2 border-blue-200">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                                {month}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-800">
-                                MONTH TOTAL
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-yellow-700">
-                                €{monthData.totalPending.toFixed(2)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-700">
-                                €{monthData.totalPaid.toFixed(2)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-800">
-                                €{(monthData.totalPending + monthData.totalPaid).toFixed(2)}
-                              </td>
-                            </tr>
-                          </React.Fragment>
-                        );
-                      })}
-                  </tbody>
-                </table>
-                
-                {Object.keys(monthlyReport).length === 0 && (
-                  <div className="text-center py-8">
-                    <BarChart3 className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No payment data</h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      No payments found for {selectedYear}
-                    </p>
-                  </div>
-                )}
-              </div>
+                            return (
+                              <tr
+                                key={`${month}-${driverId}`}
+                                style={{ borderBottom: '1px solid var(--dp-border)' }}
+                              >
+                                <td className="px-4 py-3 text-sm font-medium" style={{ color: 'var(--dp-text)' }}>
+                                  {index === 0 && month}
+                                </td>
+                                <td className="px-4 py-3 text-sm" style={{ color: 'var(--dp-text)' }}>
+                                  {driverData.driverName}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right font-medium" style={{ color: 'var(--dp-warning)', fontFamily: 'var(--font-mono)' }}>
+                                  €{driverData.pending.toFixed(2)}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right font-medium" style={{ color: 'var(--dp-success)', fontFamily: 'var(--font-mono)' }}>
+                                  €{driverData.paid.toFixed(2)}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: 'var(--dp-text)', fontFamily: 'var(--font-mono)' }}>
+                                  €{total.toFixed(2)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          
+                          {/* Month total row */}
+                          <tr
+                            style={{
+                              borderBottom: '2px solid var(--dp-border)',
+                              background: 'var(--dp-accent-soft)',
+                            }}
+                          >
+                            <td className="px-4 py-3 text-sm font-bold" style={{ color: 'var(--dp-text)' }}>
+                              {month}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-bold" style={{ color: 'var(--dp-accent)' }}>
+                              MONTH TOTAL
+                            </td>
+                            <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: 'var(--dp-warning)', fontFamily: 'var(--font-mono)' }}>
+                              €{monthData.totalPending.toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: 'var(--dp-success)', fontFamily: 'var(--font-mono)' }}>
+                              €{monthData.totalPaid.toFixed(2)}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: 'var(--dp-accent)', fontFamily: 'var(--font-mono)' }}>
+                              €{(monthData.totalPending + monthData.totalPaid).toFixed(2)}
+                            </td>
+                          </tr>
+                        </React.Fragment>
+                      );
+                    })}
+                </tbody>
+              </table>
+              
+              {Object.keys(monthlyReport).length === 0 && (
+                <div className="text-center py-12">
+                  <BarChart3 className="mx-auto h-10 w-10" style={{ color: 'var(--dp-text-muted)' }} />
+                  <h3 className="mt-3 text-sm font-medium" style={{ color: 'var(--dp-text)' }}>No payment data</h3>
+                  <p className="mt-1 text-sm" style={{ color: 'var(--dp-text-muted)' }}>
+                    No payments found for {selectedYear}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Form Section */}
+        {/* Form */}
         {showForm && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h3 className="text-lg font-semibold mb-4">
+          <div className="p-6" style={card}>
+            <h3 className="font-heading text-base mb-4" style={{ color: 'var(--dp-text)' }}>
               {editingPayment ? 'Edit Payment' : 'Add New Payment'}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>
                   Select Driver
                 </label>
                 <select
                   value={formData.driver_id}
                   onChange={(e) => setFormData({ ...formData, driver_id: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                  style={inputStyle}
                   required
                 >
                   <option value="">Select a driver</option>
@@ -483,40 +645,42 @@ export default function Payments() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Amount
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-                  required
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>
+                    Amount
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                    style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    style={inputStyle}
+                    required
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>
                   Status
                 </label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as 'pending' | 'paid' })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                  style={inputStyle}
                   required
                 >
                   <option value="pending">Pending</option>
@@ -524,28 +688,39 @@ export default function Payments() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>
                   Description
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
                   rows={3}
                   required
+                  className="outline-none w-full"
+                  style={{
+                    background: 'var(--dp-surface)',
+                    border: '1px solid var(--dp-border)',
+                    borderRadius: 10,
+                    padding: '9px 14px',
+                    fontSize: 16,
+                    color: 'var(--dp-text)',
+                    resize: 'vertical',
+                  }}
                 />
               </div>
-              <div className="flex justify-end space-x-4">
+              <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  onClick={() => { setShowForm(false); setEditingPayment(null); }}
+                  className="transition-opacity hover:opacity-80"
+                  style={btnSecondary}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                  className="transition-opacity hover:opacity-90"
+                  style={btnPrimary}
                 >
                   {editingPayment ? 'Update Payment' : 'Add Payment'}
                 </button>
@@ -554,172 +729,30 @@ export default function Payments() {
           </div>
         )}
 
-        {/* Payment Lists - Stack on mobile, side-by-side on larger screens */}
-        <div className="flex flex-col md:flex-row md:items-start space-y-6 md:space-y-0 md:space-x-6">
-          {/* Pending Payments */}
+        {/* Payment Lists */}
+        <div className="flex flex-col md:flex-row md:items-start gap-5">
+          {/* Pending */}
           <div className="w-full md:w-1/2">
-            <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
-              <h2 className="text-xl font-bold text-gray-900 flex items-center mb-4 sm:mb-6">
-                <DollarSign className="w-6 h-6 mr-2 text-yellow-500" />
-                Pending Payments
+            <div className="p-4 sm:p-5" style={card}>
+              <h2 className="flex items-center gap-2 mb-4" style={{ color: 'var(--dp-warning)' }}>
+                <DollarSign className="w-5 h-5" />
+                <span className="font-heading text-base">Pending Payments</span>
               </h2>
-
-              <div className="space-y-4">
-                {drivers.map(driver => {
-                  const driverPayments = groupedPayments[driver.id];
-                  if (!driverPayments?.pending.length || (selectedDriver && selectedDriver !== driver.id)) return null;
-                  const isExpanded = expandedDrivers.has(driver.id);
-                  
-                  return (
-                    <div key={driver.id} className="border rounded-lg p-4">
-                      <button
-                        onClick={() => toggleDriverExpanded(driver.id)}
-                        className="w-full flex justify-between items-center"
-                        onMouseDown={(e) => e.stopPropagation()}
-                      >
-                        <div className="flex items-center">
-                          <Users className="w-5 h-5 mr-2 text-gray-500" />
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              showDriverStats(driver.id);
-                            }}
-                            className="text-lg font-semibold hover:text-blue-600 transition-colors text-left"
-                          >
-                            {driver.name}
-                          </button>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-yellow-600 font-semibold">
-                            €{driverPayments.totalPending.toFixed(2)}
-                          </span>
-                          {isExpanded ? (
-                            <ChevronUp className="w-5 h-5 text-gray-500" />
-                          ) : (
-                            <ChevronDown className="w-5 h-5 text-gray-500" />
-                          )}
-                        </div>
-                      </button>
-                      
-                      <div className={`space-y-3 mt-4 ${isExpanded ? '' : 'hidden'}`}>
-                        {driverPayments.pending.map(payment => (
-                          <div key={payment.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                            <div className="mr-2">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">€{payment.amount.toFixed(2)}</span>
-                                {payment.source === 'driver' && (
-                                  <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">Driver</span>
-                                )}
-                              </div>
-                              <div className="text-sm text-gray-500">{payment.description}</div>
-                              <div className="text-xs text-gray-400">
-                                {new Date(payment.date).toLocaleDateString()}
-                              </div>
-                            </div>
-                            <div className="flex space-x-2 flex-shrink-0">
-                              <button
-                                onClick={() => handleEdit(payment)}
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                                title="Edit payment"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => completePayment(payment.id)}
-                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
-                                title="Mark as paid"
-                              >
-                                <DollarSign className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(payment.id)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="space-y-3">
+                {drivers.map(driver => renderDriverGroup(driver, 'pending'))}
               </div>
             </div>
           </div>
 
-          {/* Paid Payments */}
+          {/* Paid */}
           <div className="w-full md:w-1/2">
-            <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
-              <h2 className="text-xl font-bold flex items-center mb-4 sm:mb-6 text-green-600">
-                <DollarSign className="w-6 h-6 mr-2 text-green-500" />
-                Paid Payments
+            <div className="p-4 sm:p-5" style={card}>
+              <h2 className="flex items-center gap-2 mb-4" style={{ color: 'var(--dp-success)' }}>
+                <DollarSign className="w-5 h-5" />
+                <span className="font-heading text-base">Paid Payments</span>
               </h2>
-              
-              <div className="space-y-4">
-                {drivers.map(driver => {
-                  const driverPayments = groupedPayments[driver.id];
-                  if (!driverPayments?.paid.length || (selectedDriver && selectedDriver !== driver.id)) return null;
-                  const isExpanded = expandedDrivers.has(driver.id);
-                  
-                  return (
-                    <div key={driver.id} className="border rounded-lg p-4">
-                      <button
-                        onClick={() => toggleDriverExpanded(driver.id)}
-                        className="w-full flex justify-between items-center"
-                        onMouseDown={(e) => e.stopPropagation()}
-                      >
-                        <div className="flex items-center">
-                          <Users className="w-5 h-5 mr-2 text-gray-500" />
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              showDriverStats(driver.id);
-                            }}
-                            className="text-lg font-semibold hover:text-blue-600 transition-colors text-left"
-                          >
-                            {driver.name}
-                          </button>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <span className="text-green-600 font-semibold">
-                            €{driverPayments.totalPaid.toFixed(2)}
-                          </span>
-                          {isExpanded ? (
-                            <ChevronUp className="w-5 h-5 text-gray-500" />
-                          ) : (
-                            <ChevronDown className="w-5 h-5 text-gray-500" />
-                          )}
-                        </div>
-                      </button>
-                      
-                      <div className={`space-y-3 mt-4 ${isExpanded ? '' : 'hidden'}`}>
-                        {driverPayments.paid.map(payment => (
-                          <div key={payment.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                            <div className="mr-2">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">€{payment.amount.toFixed(2)}</span>
-                                {payment.source === 'driver' && (
-                                  <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">Driver</span>
-                                )}
-                              </div>
-                              <div className="text-sm text-gray-500">{payment.description}</div>
-                              <div className="text-xs text-gray-400">
-                                {new Date(payment.date).toLocaleDateString()}
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => handleDelete(payment.id)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg flex-shrink-0"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="space-y-3">
+                {drivers.map(driver => renderDriverGroup(driver, 'paid'))}
               </div>
             </div>
           </div>
@@ -734,51 +767,45 @@ export default function Payments() {
           {selectedDriverStats && (
             <div className="space-y-6">
               {/* Overview Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <DollarSign className="w-5 h-5 text-green-500" />
-                    <span className="text-sm text-gray-500">Total Earnings</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  { icon: DollarSign, label: 'Total Earnings', value: `€${selectedDriverStats.stats.totalEarnings.toFixed(2)}`, color: 'var(--dp-success)' },
+                  { icon: Clock, label: 'Pending', value: `€${selectedDriverStats.stats.pendingAmount.toFixed(2)}`, color: 'var(--dp-warning)' },
+                  { icon: TrendingUp, label: 'Paid', value: `€${selectedDriverStats.stats.paidAmount.toFixed(2)}`, color: 'var(--dp-accent)' },
+                ].map(s => (
+                  <div
+                    key={s.label}
+                    className="p-4"
+                    style={{
+                      background: 'var(--dp-surface-2)',
+                      border: '1px solid var(--dp-border)',
+                      borderRadius: 10,
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <s.icon className="w-4 h-4" style={{ color: s.color }} />
+                      <span className="text-xs" style={{ color: 'var(--dp-text-muted)' }}>{s.label}</span>
+                    </div>
+                    <div className="text-xl font-bold" style={{ color: 'var(--dp-text)', fontFamily: 'var(--font-mono)' }}>
+                      {s.value}
+                    </div>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    €{selectedDriverStats.stats.totalEarnings.toFixed(2)}
-                  </div>
-                </div>
-                
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <Clock className="w-5 h-5 text-yellow-500" />
-                    <span className="text-sm text-gray-500">Pending</span>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    €{selectedDriverStats.stats.pendingAmount.toFixed(2)}
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <TrendingUp className="w-5 h-5 text-blue-500" />
-                    <span className="text-sm text-gray-500">Paid</span>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">
-                    €{selectedDriverStats.stats.paidAmount.toFixed(2)}
-                  </div>
-                </div>
+                ))}
               </div>
 
               {/* Monthly Earnings */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  <Calendar className="w-5 h-5 mr-2 text-gray-500" />
+                <h3 className="flex items-center gap-2 text-sm font-semibold mb-3" style={{ color: 'var(--dp-text)' }}>
+                  <Calendar className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
                   Monthly Earnings
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {Object.entries(selectedDriverStats.stats.monthlyEarnings)
                     .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
                     .map(([month, amount]) => (
-                    <div key={month} className="flex items-center justify-between">
-                      <span className="text-gray-600">{month}</span>
-                      <span className="font-medium">€{amount.toFixed(2)}</span>
+                    <div key={month} className="flex items-center justify-between py-1">
+                      <span className="text-sm" style={{ color: 'var(--dp-text-secondary)' }}>{month}</span>
+                      <span className="text-sm font-medium" style={{ color: 'var(--dp-text)', fontFamily: 'var(--font-mono)' }}>€{amount.toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -787,24 +814,31 @@ export default function Payments() {
               {/* Last Payment */}
               {selectedDriverStats.stats.lastPayment && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <Clock className="w-5 h-5 mr-2 text-gray-500" />
+                  <h3 className="flex items-center gap-2 text-sm font-semibold mb-3" style={{ color: 'var(--dp-text)' }}>
+                    <Clock className="w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
                     Last Payment
                   </h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div
+                    className="p-4"
+                    style={{
+                      background: 'var(--dp-surface-2)',
+                      border: '1px solid var(--dp-border)',
+                      borderRadius: 10,
+                    }}
+                  >
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-gray-600">Amount</span>
-                      <span className="font-medium">
+                      <span className="text-sm" style={{ color: 'var(--dp-text-muted)' }}>Amount</span>
+                      <span className="text-sm font-medium" style={{ color: 'var(--dp-text)', fontFamily: 'var(--font-mono)' }}>
                         €{selectedDriverStats.stats.lastPayment.amount.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-gray-600">Date</span>
-                      <span className="text-gray-700">
+                      <span className="text-sm" style={{ color: 'var(--dp-text-muted)' }}>Date</span>
+                      <span className="text-sm" style={{ color: 'var(--dp-text)' }}>
                         {new Date(selectedDriverStats.stats.lastPayment.date).toLocaleDateString()}
                       </span>
                     </div>
-                    <div className="text-gray-600 text-sm mt-2">
+                    <div className="text-sm mt-2" style={{ color: 'var(--dp-text-muted)' }}>
                       {selectedDriverStats.stats.lastPayment.description}
                     </div>
                   </div>
@@ -814,6 +848,6 @@ export default function Payments() {
           )}
         </Modal>
       </div>
-    </div>
+    </DispatchLayout>
   );
 }

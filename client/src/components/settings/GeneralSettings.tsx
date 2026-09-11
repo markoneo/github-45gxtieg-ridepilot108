@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings2, AlertTriangle } from 'lucide-react';
+import { Settings2, AlertTriangle, Info } from 'lucide-react';
 import SettingsLayout from './SettingsLayout';
 
 const DAILY_CAPACITY_KEY = 'ridepilot_daily_capacity';
@@ -51,48 +51,69 @@ export default function GeneralSettings() {
 
   return (
     <SettingsLayout title="Project Capacity Settings">
-      <div className="p-6 space-y-6">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">
-                About Project Capacity Settings
-              </h3>
-              <div className="mt-2 text-sm text-blue-700">
-                <p>
-                  Configure your daily project capacity limits and receive warnings when approaching or exceeding your workload threshold.
-                </p>
-              </div>
-            </div>
+      <div className="space-y-5">
+        {/* Info box */}
+        <div
+          className="flex items-start gap-3 p-4"
+          style={{
+            background: 'var(--dp-accent-soft)',
+            border: '1px solid var(--dp-border)',
+            borderRadius: 'var(--dp-radius)',
+          }}
+        >
+          <Info className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--dp-accent)' }} />
+          <div>
+            <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--dp-text)' }}>
+              About Project Capacity Settings
+            </h3>
+            <p className="text-sm" style={{ color: 'var(--dp-text-secondary)', lineHeight: 1.5 }}>
+              Configure your daily project capacity limits and receive warnings when approaching or exceeding your workload threshold.
+            </p>
           </div>
         </div>
 
+        {/* Success toast */}
         {showSuccess && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <svg className="h-5 w-5 text-green-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <p className="text-sm font-medium text-green-800">Settings saved successfully!</p>
-            </div>
+          <div
+            className="flex items-center gap-2 p-4"
+            style={{
+              background: 'var(--dp-success-bg)',
+              border: '1px solid var(--dp-border)',
+              borderRadius: 'var(--dp-radius)',
+              color: 'var(--dp-success)',
+            }}
+          >
+            <svg className="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <p className="text-sm font-medium">Settings saved successfully!</p>
           </div>
         )}
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-start mb-6">
-            <div className="flex-shrink-0 bg-amber-100 p-3 rounded-lg">
-              <AlertTriangle className="w-6 h-6 text-amber-600" />
+        {/* Main card */}
+        <div
+          className="p-6"
+          style={{
+            background: 'var(--dp-surface)',
+            border: '1px solid var(--dp-border)',
+            borderRadius: 'var(--dp-radius)',
+          }}
+        >
+          <div className="flex items-start gap-4 mb-6">
+            <div
+              className="flex-shrink-0 p-3"
+              style={{ background: 'var(--dp-warning-bg)', borderRadius: 10 }}
+            >
+              <AlertTriangle className="w-6 h-6" style={{ color: 'var(--dp-warning)' }} />
             </div>
-            <div className="ml-4 flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            <div>
+              <h3
+                className="font-heading text-lg mb-1"
+                style={{ color: 'var(--dp-text)' }}
+              >
                 Daily Project Capacity
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm" style={{ color: 'var(--dp-text-muted)' }}>
                 Set a threshold for your daily workload to receive visual warnings on the dashboard
               </p>
             </div>
@@ -100,7 +121,10 @@ export default function GeneralSettings() {
 
           <form onSubmit={handleSave} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                className="block text-xs font-medium mb-2"
+                style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}
+              >
                 Maximum projects per day before warning
               </label>
               <input
@@ -110,29 +134,45 @@ export default function GeneralSettings() {
                 value={inputValue}
                 onChange={handleInputChange}
                 onBlur={handleInputBlur}
-                className="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full sm:w-64 outline-none transition-all"
+                style={{
+                  background: 'var(--dp-surface)',
+                  border: '1px solid var(--dp-border)',
+                  borderRadius: 10,
+                  padding: '9px 14px',
+                  height: 40,
+                  fontSize: 16,
+                  color: 'var(--dp-text)',
+                  fontFamily: 'var(--font-mono)',
+                }}
                 required
               />
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm" style={{ color: 'var(--dp-text-muted)' }}>
                 Set how many projects you can handle per day. When exceeded, a warning will appear on the dashboard.
               </p>
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <div className="flex items-start">
-                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div className="ml-3">
-                  <h4 className="text-sm font-medium text-amber-800 mb-1">
-                    Preview Warning
-                  </h4>
-                  <p className="text-sm text-amber-700">
-                    High workload – You have <strong>{dailyCapacity + 2} projects</strong> scheduled for a date, which exceeds your daily limit of <strong>{dailyCapacity}</strong>
-                  </p>
-                </div>
+            {/* Warning preview */}
+            <div
+              className="flex items-start gap-3 p-4"
+              style={{
+                background: 'var(--dp-warning-bg)',
+                border: '1px solid var(--dp-border)',
+                borderRadius: 10,
+              }}
+            >
+              <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--dp-warning)' }} />
+              <div>
+                <h4 className="text-sm font-semibold mb-1" style={{ color: 'var(--dp-warning)' }}>
+                  Preview Warning
+                </h4>
+                <p className="text-sm" style={{ color: 'var(--dp-text-secondary)', lineHeight: 1.5 }}>
+                  High workload – You have <strong>{dailyCapacity + 2} projects</strong> scheduled for a date, which exceeds your daily limit of <strong>{dailyCapacity}</strong>
+                </p>
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="flex justify-end gap-3 pt-4">
               <button
                 type="button"
                 onClick={() => {
@@ -146,13 +186,33 @@ export default function GeneralSettings() {
                     setInputValue('10');
                   }
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="transition-opacity hover:opacity-80"
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: 10,
+                  border: '1px solid var(--dp-border-strong)',
+                  background: 'transparent',
+                  color: 'var(--dp-text)',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  minHeight: 40,
+                }}
               >
                 Reset
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="transition-opacity hover:opacity-90"
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: 10,
+                  background: 'var(--dp-accent)',
+                  color: 'var(--dp-on-accent)',
+                  border: 'none',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  minHeight: 40,
+                }}
               >
                 Save Settings
               </button>
@@ -160,17 +220,23 @@ export default function GeneralSettings() {
           </form>
         </div>
 
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <div className="flex items-start">
-            <Settings2 className="w-5 h-5 text-gray-500 flex-shrink-0 mt-0.5" />
-            <div className="ml-3">
-              <h4 className="text-sm font-medium text-gray-700 mb-1">
-                Note
-              </h4>
-              <p className="text-sm text-gray-600">
-                This is a visual warning only. You can still create projects beyond this limit. The warning helps you manage your workload and avoid overbooking.
-              </p>
-            </div>
+        {/* Note */}
+        <div
+          className="flex items-start gap-3 p-4"
+          style={{
+            background: 'var(--dp-surface-2)',
+            border: '1px solid var(--dp-border)',
+            borderRadius: 'var(--dp-radius)',
+          }}
+        >
+          <Settings2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--dp-text-muted)' }} />
+          <div>
+            <h4 className="text-sm font-medium mb-1" style={{ color: 'var(--dp-text-secondary)' }}>
+              Note
+            </h4>
+            <p className="text-sm" style={{ color: 'var(--dp-text-muted)', lineHeight: 1.5 }}>
+              This is a visual warning only. You can still create projects beyond this limit. The warning helps you manage your workload and avoid overbooking.
+            </p>
           </div>
         </div>
       </div>

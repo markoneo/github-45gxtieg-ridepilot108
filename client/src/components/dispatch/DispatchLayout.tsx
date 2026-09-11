@@ -17,14 +17,15 @@ interface ChannelItem {
 
 interface DispatchLayoutProps {
   children: React.ReactNode;
-  channels: ChannelItem[];
-  activeChannel: string | null;
-  onChannelSelect: (id: string | null) => void;
-  searchQuery: string;
-  onSearchChange: (q: string) => void;
-  rideCount: number;
-  onRefresh: () => void;
-  isRefreshing: boolean;
+  channels?: ChannelItem[];
+  activeChannel?: string | null;
+  onChannelSelect?: (id: string | null) => void;
+  searchQuery?: string;
+  onSearchChange?: (q: string) => void;
+  rideCount?: number;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+  pageTitle?: string;
 }
 
 const CHANNEL_COLORS = [
@@ -74,6 +75,8 @@ export default function DispatchLayout({
   const [now, setNow] = useState(new Date());
   const searchRef = useRef<HTMLInputElement>(null);
 
+  const hasDispatchProps = channels !== undefined && onChannelSelect !== undefined && onSearchChange !== undefined;
+
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(timer);
@@ -103,7 +106,7 @@ export default function DispatchLayout({
   });
   const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
-  const allChannelsCount = channels.reduce((s, c) => s + c.count, 0);
+  const allChannelsCount = channels ? channels.reduce((s, c) => s + c.count, 0) : 0;
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--dp-bg)', color: 'var(--dp-text)', fontFamily: 'var(--font-body)' }}>
@@ -231,14 +234,15 @@ export default function DispatchLayout({
             })()}
           </div>
 
-          {/* Channels */}
+          {/* Channels (only when dispatch props provided) */}
+          {hasDispatchProps && channels && channels.length > 0 && (
           <div className="mt-6">
             <div className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--dp-text-muted)' }}>
               Channels
             </div>
             <div className="space-y-0.5">
               <button
-                onClick={() => onChannelSelect(null)}
+                onClick={() => onChannelSelect!(null)}
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
                 style={{
                   background: activeChannel === null ? 'var(--dp-accent-soft)' : 'transparent',
@@ -255,7 +259,7 @@ export default function DispatchLayout({
               {channels.map((ch, i) => (
                 <button
                   key={ch.id}
-                  onClick={() => onChannelSelect(activeChannel === ch.id ? null : ch.id)}
+                  onClick={() => onChannelSelect!(activeChannel === ch.id ? null : ch.id)}
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors"
                   style={{
                     background: activeChannel === ch.id ? 'var(--dp-accent-soft)' : 'transparent',
@@ -272,6 +276,7 @@ export default function DispatchLayout({
               ))}
             </div>
           </div>
+          )}
         </nav>
 
         {/* User block */}
@@ -324,13 +329,16 @@ export default function DispatchLayout({
 
           {/* Title + date */}
           <div className="hidden lg:flex items-baseline gap-3">
-            <h1 className="font-heading text-xl" style={{ color: 'var(--dp-text)' }}>Dispatch</h1>
+            <h1 className="font-heading text-xl" style={{ color: 'var(--dp-text)' }}>{pageTitle || 'Dispatch'}</h1>
+            {!pageTitle && (
             <span className="text-sm" style={{ color: 'var(--dp-text-muted)' }}>
               {dateStr} · {timeStr}
             </span>
+            )}
           </div>
 
-          {/* Search */}
+          {/* Search (only when dispatch props provided) */}
+          {hasDispatchProps ? (
           <div className="flex-1 max-w-md ml-auto lg:ml-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--dp-text-muted)' }} />
@@ -339,7 +347,7 @@ export default function DispatchLayout({
                 type="text"
                 placeholder='Search client, place, booking #   press "/"'
                 value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
+                onChange={(e) => onSearchChange!(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 text-sm rounded-lg outline-none transition-colors"
                 style={{
                   background: 'var(--dp-surface-2)',
@@ -350,15 +358,17 @@ export default function DispatchLayout({
               {searchQuery && (
                 <button
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5"
-                  onClick={() => onSearchChange('')}
+                  onClick={() => onSearchChange!('')}
                 >
                   <X className="w-3.5 h-3.5" style={{ color: 'var(--dp-text-muted)' }} />
                 </button>
               )}
             </div>
           </div>
+          ) : <div className="flex-1" />}
 
-          {/* Actions */}
+          {/* Actions (only when dispatch props provided) */}
+          {hasDispatchProps && (
           <div className="flex items-center gap-2">
             <button
               onClick={onRefresh}
@@ -378,6 +388,7 @@ export default function DispatchLayout({
               <span className="hidden sm:inline">New ride</span>
             </button>
           </div>
+          )}
         </header>
 
         {/* Content */}

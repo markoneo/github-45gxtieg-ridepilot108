@@ -1,10 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Edit2, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useData } from '../../contexts/DataContext';
+import SettingsLayout from './SettingsLayout';
+
+const inputStyle: React.CSSProperties = {
+  background: 'var(--dp-surface)',
+  border: '1px solid var(--dp-border)',
+  borderRadius: 10,
+  padding: '9px 14px',
+  height: 40,
+  fontSize: 16,
+  color: 'var(--dp-text)',
+  width: '100%',
+  outline: 'none',
+};
 
 export default function Drivers() {
   const { drivers, companies, refreshData } = useData();
   const [editingDriver, setEditingDriver] = useState<any>(null);
+  const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -15,6 +30,7 @@ export default function Drivers() {
 
   const handleEdit = (driver: any) => {
     setEditingDriver(driver);
+    setShowForm(true);
     setFormData({
       name: driver.name || '',
       phone: driver.phone || '',
@@ -43,6 +59,7 @@ export default function Drivers() {
 
       await refreshData();
       setEditingDriver(null);
+      setShowForm(false);
       setFormData({
         name: '',
         phone: '',
@@ -70,6 +87,7 @@ export default function Drivers() {
       if (error) throw error;
 
       await refreshData();
+      setShowForm(false);
       setFormData({
         name: '',
         phone: '',
@@ -98,169 +116,253 @@ export default function Drivers() {
     }
   };
 
+  const statusPill = (status: string) => {
+    const map: Record<string, { bg: string; color: string }> = {
+      available: { bg: 'var(--dp-success-bg)', color: 'var(--dp-success)' },
+      busy: { bg: 'var(--dp-warning-bg)', color: 'var(--dp-warning)' },
+      offline: { bg: 'var(--dp-charge-bg)', color: 'var(--dp-charge)' },
+    };
+    const s = map[status] || map.offline;
+    return (
+      <span
+        className="inline-flex items-center px-2.5 py-0.5 text-xs font-semibold"
+        style={{ background: s.bg, color: s.color, borderRadius: 99 }}
+      >
+        {status}
+      </span>
+    );
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Drivers</h2>
-      </div>
-
-      {/* Add/Edit Driver Form */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          {editingDriver ? 'Edit Driver' : 'Add New Driver'}
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Phone</label>
-            <input
-              type="text"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">License</label>
-            <input
-              type="text"
-              value={formData.license}
-              onChange={(e) => setFormData({ ...formData, license: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Status</label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as 'available' | 'busy' | 'offline' })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            >
-              <option value="available">Available</option>
-              <option value="busy">Busy</option>
-              <option value="offline">Offline</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">PIN (4-6 digits)</label>
-            <input
-              type="text"
-              value={formData.pin}
-              onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              maxLength={6}
-              pattern="[0-9]{4,6}"
-            />
-          </div>
-        </div>
-        <div className="mt-4 flex space-x-3">
-          <button
-            onClick={editingDriver ? handleSave : handleAdd}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+    <SettingsLayout
+      title="Drivers"
+      onAdd={() => { setEditingDriver(null); setShowForm(true); }}
+      addButtonText="Add Driver"
+    >
+      <div className="space-y-5">
+        {/* Form */}
+        {showForm && (
+          <div
+            className="p-6"
+            style={{
+              background: 'var(--dp-surface)',
+              border: '1px solid var(--dp-border)',
+              borderRadius: 'var(--dp-radius)',
+            }}
           >
-            {editingDriver ? 'Save Changes' : 'Add Driver'}
-          </button>
-          {editingDriver && (
-            <button
-              onClick={() => {
-                setEditingDriver(null);
-                setFormData({
-                  name: '',
-                  phone: '',
-                  license: '',
-                  status: 'available',
-                  pin: '1234'
-                });
-              }}
-              className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
-            >
-              Cancel
-            </button>
-          )}
-        </div>
-      </div>
+            <h3 className="font-heading text-base mb-4" style={{ color: 'var(--dp-text)' }}>
+              {editingDriver ? 'Edit Driver' : 'Add New Driver'}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>Phone</label>
+                <input
+                  type="text"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>License</label>
+                <input
+                  type="text"
+                  value={formData.license}
+                  onChange={(e) => setFormData({ ...formData, license: e.target.value })}
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>Status</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'available' | 'busy' | 'offline' })}
+                  style={inputStyle}
+                >
+                  <option value="available">Available</option>
+                  <option value="busy">Busy</option>
+                  <option value="offline">Offline</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>PIN (4-6 digits)</label>
+                <input
+                  type="text"
+                  value={formData.pin}
+                  onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
+                  style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }}
+                  maxLength={6}
+                  pattern="[0-9]{4,6}"
+                />
+              </div>
+            </div>
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={editingDriver ? handleSave : handleAdd}
+                className="transition-opacity hover:opacity-90"
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: 10,
+                  background: 'var(--dp-accent)',
+                  color: 'var(--dp-on-accent)',
+                  border: 'none',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  minHeight: 40,
+                }}
+              >
+                {editingDriver ? 'Save Changes' : 'Add Driver'}
+              </button>
+              {editingDriver && (
+                <button
+                  onClick={() => {
+                    setEditingDriver(null);
+                    setShowForm(false);
+                    setFormData({
+                      name: '',
+                      phone: '',
+                      license: '',
+                      status: 'available',
+                      pin: '1234'
+                    });
+                  }}
+                  className="transition-opacity hover:opacity-80"
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: 10,
+                    border: '1px solid var(--dp-border-strong)',
+                    background: 'transparent',
+                    color: 'var(--dp-text)',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    minHeight: 40,
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+              {!editingDriver && (
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="transition-opacity hover:opacity-80"
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: 10,
+                    border: '1px solid var(--dp-border-strong)',
+                    background: 'transparent',
+                    color: 'var(--dp-text)',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    minHeight: 40,
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
-      {/* Drivers List */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">All Drivers</h3>
+        {/* Table */}
+        <div
+          className="overflow-hidden"
+          style={{
+            background: 'var(--dp-surface)',
+            border: '1px solid var(--dp-border)',
+            borderRadius: 'var(--dp-radius)',
+          }}
+        >
+          <div className="px-5 py-3" style={{ borderBottom: '1px solid var(--dp-border)' }}>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '.06em',
+                color: 'var(--dp-text-muted)',
+              }}
+            >
+              All Drivers
+            </span>
+          </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Phone
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    License
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    PIN
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Earnings
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--dp-border)' }}>
+                  {['Name', 'Phone', 'License', 'Status', 'PIN', 'Earnings', 'Actions'].map((h, i) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3"
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '.05em',
+                        color: 'var(--dp-text-muted)',
+                        background: 'var(--dp-surface-2)',
+                        textAlign: h === 'Earnings' ? 'right' : 'left',
+                      }}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody>
                 {drivers?.map((driver) => (
-                  <tr key={driver.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr
+                    key={driver.id}
+                    className="transition-colors"
+                    style={{ borderBottom: '1px solid var(--dp-border)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--dp-surface-2)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <td className="px-4 py-3 text-sm font-medium" style={{ color: 'var(--dp-text)' }}>
                       {driver.name}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm" style={{ color: 'var(--dp-text-secondary)' }}>
                       {driver.phone || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm" style={{ color: 'var(--dp-text-secondary)' }}>
                       {driver.license || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        driver.status === 'available' 
-                          ? 'bg-green-100 text-green-800'
-                          : driver.status === 'busy'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {driver.status}
-                      </span>
+                    <td className="px-4 py-3">
+                      {statusPill(driver.status)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm" style={{ color: 'var(--dp-text-secondary)', fontFamily: 'var(--font-mono)' }}>
                       {String(driver.pin || '1234')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm text-right" style={{ color: 'var(--dp-text)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
                       ${Number(driver.total_earnings || 0).toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <button
-                        onClick={() => handleEdit(driver)}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(driver.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleEdit(driver)}
+                          className="p-1.5 rounded-md transition-opacity hover:opacity-70"
+                          style={{ color: 'var(--dp-text-secondary)' }}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(driver.id)}
+                          className="p-1.5 rounded-md transition-colors"
+                          style={{ color: 'var(--dp-text-secondary)' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--dp-danger)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--dp-text-secondary)')}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -269,6 +371,6 @@ export default function Drivers() {
           </div>
         </div>
       </div>
-    </div>
+    </SettingsLayout>
   );
 }

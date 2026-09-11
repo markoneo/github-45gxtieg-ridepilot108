@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, Edit2, Palette } from 'lucide-react';
+import { Trash2, Edit2, Palette, Info, X } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import SettingsLayout from './SettingsLayout';
 
@@ -28,6 +28,18 @@ const customColorOptions = [
   { label: 'Booking Purple', value: '#3D365C' },
   { label: 'RideConnect Red', value: '#BF3131' },
 ];
+
+const inputStyle: React.CSSProperties = {
+  background: 'var(--dp-surface)',
+  border: '1px solid var(--dp-border)',
+  borderRadius: 10,
+  padding: '9px 14px',
+  height: 40,
+  fontSize: 16,
+  color: 'var(--dp-text)',
+  width: '100%',
+  outline: 'none',
+};
 
 export default function Companies() {
   const navigate = useNavigate();
@@ -151,145 +163,168 @@ export default function Companies() {
       onAdd={() => setShowForm(true)}
       addButtonText="Add Company"
     >
-        {/* Information Section */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-800">
-                About Companies
-              </h3>
-              <div className="mt-2 text-sm text-blue-700">
-                <p>
-                  You can add multiple company sources from which you receive projects (such as Viator, Booking.com, or partner agencies), 
-                  or simply add your own company if you work independently. Each company can have its own color theme for easy identification 
-                  in your dashboard and reports.
-                </p>
-              </div>
-            </div>
+      <div className="space-y-5">
+        {/* Info box */}
+        <div
+          className="flex items-start gap-3 p-4"
+          style={{
+            background: 'var(--dp-accent-soft)',
+            border: '1px solid var(--dp-border)',
+            borderRadius: 'var(--dp-radius)',
+          }}
+        >
+          <Info className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--dp-accent)' }} />
+          <div>
+            <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--dp-text)' }}>
+              About Companies
+            </h3>
+            <p className="text-sm" style={{ color: 'var(--dp-text-secondary)', lineHeight: 1.5 }}>
+              You can add multiple company sources from which you receive projects (such as Viator, Booking.com, or partner agencies), 
+              or simply add your own company if you work independently. Each company can have its own color theme for easy identification 
+              in your dashboard and reports.
+            </p>
           </div>
         </div>
 
+        {/* Form */}
         {showForm && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h3 className="text-lg font-semibold mb-4">
+          <div
+            className="p-6"
+            style={{
+              background: 'var(--dp-surface)',
+              border: '1px solid var(--dp-border)',
+              borderRadius: 'var(--dp-radius)',
+            }}
+          >
+            <h3 className="font-heading text-base mb-4" style={{ color: 'var(--dp-text)' }}>
               {editingCompany ? 'Edit Company' : 'Add New Company'}
             </h3>
             <form onSubmit={editingCompany ? handleUpdate : handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>
                   Company Name
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                  style={inputStyle}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>
                   Address
                 </label>
                 <input
                   type="text"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                  style={inputStyle}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>
                   Phone
                 </label>
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
+                  style={inputStyle}
                   required
                 />
               </div>
 
               {/* Color selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                  <Palette className="w-4 h-4 mr-1" />
+                <label className="flex items-center gap-1.5 text-xs font-medium mb-2" style={{ color: 'var(--dp-text-secondary)', fontSize: 12 }}>
+                  <Palette className="w-3.5 h-3.5" />
                   Company Color
                 </label>
                 
-                {/* Color options */}
-                <div className="grid grid-cols-5 gap-2 mb-3">
-                  {colorOptions.map(color => (
-                    <div 
-                      key={color.value}
-                      className={`h-8 rounded cursor-pointer border-2 ${
-                        formData.color === color.value && !showCustomColor
-                          ? 'border-black'
-                          : 'border-transparent'
-                      } ${color.tailwindClass}`}
-                      onClick={() => {
-                        setFormData({ ...formData, color: color.value });
-                        setShowCustomColor(false);
-                      }}
-                      title={color.name}
-                    />
-                  ))}
-                  
-                  {/* Custom color option */}
-                  <div 
-                    className={`h-8 rounded cursor-pointer border-2 ${
-                      showCustomColor ? 'border-black' : 'border-transparent'
-                    } bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500`}
-                    onClick={() => setShowCustomColor(true)}
-                    title="Custom color"
-                  />
-                </div>
-
-                {/* Custom color input */}
-                {showCustomColor && (
-                  <>
-                    <div className="flex items-center gap-3 mb-3">
-                      <input
-                        type="color"
-                        value={customColor}
-                        onChange={(e) => setCustomColor(e.target.value)}
-                        className="w-10 h-10 p-0 border-0"
+                <div
+                  className="p-3"
+                  style={{
+                    background: 'var(--dp-surface-2)',
+                    border: '1px solid var(--dp-border)',
+                    borderRadius: 10,
+                  }}
+                >
+                  {/* Color options */}
+                  <div className="grid grid-cols-7 sm:grid-cols-14 gap-2 mb-2">
+                    {colorOptions.map(color => (
+                      <div 
+                        key={color.value}
+                        className={`h-7 w-7 rounded-md cursor-pointer border-2 ${
+                          formData.color === color.value && !showCustomColor
+                            ? 'border-white'
+                            : 'border-transparent'
+                        } ${color.tailwindClass}`}
+                        onClick={() => {
+                          setFormData({ ...formData, color: color.value });
+                          setShowCustomColor(false);
+                        }}
+                        title={color.name}
+                        style={{ boxShadow: formData.color === color.value && !showCustomColor ? '0 0 0 2px var(--dp-accent)' : undefined }}
                       />
-                      <input
-                        type="text"
-                        value={customColor}
-                        onChange={(e) => setCustomColor(e.target.value)}
-                        placeholder="#HEX Color"
-                        className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500"
-                      />
-                    </div>
+                    ))}
                     
-                    {/* Quick color presets */}
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {customColorOptions.map(option => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setCustomColor(option.value)}
-                          className="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200"
-                          style={{ color: option.value }}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
+                    {/* Custom color option */}
+                    <div 
+                      className={`h-7 w-7 rounded-md cursor-pointer border-2 ${
+                        showCustomColor ? 'border-white' : 'border-transparent'
+                      } bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500`}
+                      onClick={() => setShowCustomColor(true)}
+                      title="Custom color"
+                      style={{ boxShadow: showCustomColor ? '0 0 0 2px var(--dp-accent)' : undefined }}
+                    />
+                  </div>
+
+                  {/* Custom color input */}
+                  {showCustomColor && (
+                    <>
+                      <div className="flex items-center gap-3 mt-3 mb-2">
+                        <input
+                          type="color"
+                          value={customColor}
+                          onChange={(e) => setCustomColor(e.target.value)}
+                          className="w-10 h-10 p-0 border-0 rounded"
+                        />
+                        <input
+                          type="text"
+                          value={customColor}
+                          onChange={(e) => setCustomColor(e.target.value)}
+                          placeholder="#HEX Color"
+                          style={{ ...inputStyle, fontFamily: 'var(--font-mono)', flex: 1 }}
+                        />
+                      </div>
+                      
+                      {/* Quick color presets */}
+                      <div className="flex flex-wrap gap-2">
+                        {customColorOptions.map(option => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setCustomColor(option.value)}
+                            className="text-xs px-2.5 py-1 rounded-md font-medium transition-opacity hover:opacity-80"
+                            style={{
+                              background: 'var(--dp-surface)',
+                              border: '1px solid var(--dp-border)',
+                              color: option.value,
+                            }}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
               
-              <div className="flex justify-end space-x-4">
+              <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -298,13 +333,33 @@ export default function Companies() {
                     setShowCustomColor(false);
                     setCustomColor('');
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="transition-opacity hover:opacity-80"
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: 10,
+                    border: '1px solid var(--dp-border-strong)',
+                    background: 'transparent',
+                    color: 'var(--dp-text)',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    minHeight: 40,
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                  className="transition-opacity hover:opacity-90"
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: 10,
+                    background: 'var(--dp-accent)',
+                    color: 'var(--dp-on-accent)',
+                    border: 'none',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    minHeight: 40,
+                  }}
                 >
                   {editingCompany ? 'Update Company' : 'Add Company'}
                 </button>
@@ -313,64 +368,88 @@ export default function Companies() {
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Color
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Company Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Address
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {companies.map((company) => (
-                <tr key={company.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div 
-                      className={`w-6 h-6 rounded-full ${getCompanyColorClass(company.id)}`}
-                      title="Company color"
-                    ></div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {company.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {company.address}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {company.phone}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
-                    <button
-                      onClick={() => handleEdit(company)}
-                      className="text-blue-600 hover:text-blue-900 transition-colors"
+        {/* Table */}
+        <div
+          className="overflow-hidden"
+          style={{
+            background: 'var(--dp-surface)',
+            border: '1px solid var(--dp-border)',
+            borderRadius: 'var(--dp-radius)',
+          }}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--dp-border)' }}>
+                  {['Color', 'Company Name', 'Address', 'Phone', 'Actions'].map(h => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-left"
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '.05em',
+                        color: 'var(--dp-text-muted)',
+                        background: 'var(--dp-surface-2)',
+                      }}
                     >
-                      <Edit2 className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteCompany(company.id)}
-                      className="text-red-600 hover:text-red-900 transition-colors"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </td>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {companies.map((company) => (
+                  <tr
+                    key={company.id}
+                    className="transition-colors"
+                    style={{ borderBottom: '1px solid var(--dp-border)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--dp-surface-2)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <td className="px-4 py-3">
+                      <div 
+                        className={`w-6 h-6 rounded-full ${getCompanyColorClass(company.id)}`}
+                        title="Company color"
+                      ></div>
+                    </td>
+                    <td className="px-4 py-3 text-sm font-medium" style={{ color: 'var(--dp-text)' }}>
+                      {company.name}
+                    </td>
+                    <td className="px-4 py-3 text-sm" style={{ color: 'var(--dp-text-secondary)' }}>
+                      {company.address}
+                    </td>
+                    <td className="px-4 py-3 text-sm" style={{ color: 'var(--dp-text-secondary)' }}>
+                      {company.phone}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleEdit(company)}
+                          className="p-1.5 rounded-md transition-opacity hover:opacity-70"
+                          style={{ color: 'var(--dp-text-secondary)' }}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCompany(company.id)}
+                          className="p-1.5 rounded-md transition-colors"
+                          style={{ color: 'var(--dp-text-secondary)' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--dp-danger)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--dp-text-secondary)')}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
+      </div>
     </SettingsLayout>
   );
 }

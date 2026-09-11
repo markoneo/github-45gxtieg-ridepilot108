@@ -1,14 +1,22 @@
 import React from 'react';
 import SettingsLayout from './settings/SettingsLayout';
+import { Info } from 'lucide-react';
 
-// Empty settings page as notifications are removed
 export default function NotificationSettings() {
   return (
     <SettingsLayout title="Notification Settings">
-      <div className="p-4 sm:p-6">
-        <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-          <h3 className="text-lg font-medium text-yellow-800 mb-2">Notifications Disabled</h3>
-          <p className="text-sm text-yellow-700">
+      <div
+        className="flex items-start gap-3 p-4"
+        style={{
+          background: 'var(--dp-warning-bg)',
+          border: '1px solid var(--dp-border)',
+          borderRadius: 'var(--dp-radius)',
+        }}
+      >
+        <Info className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--dp-warning)' }} />
+        <div>
+          <h3 className="text-sm font-semibold mb-1" style={{ color: 'var(--dp-warning)' }}>Notifications Disabled</h3>
+          <p className="text-sm" style={{ color: 'var(--dp-text-secondary)', lineHeight: 1.5 }}>
             Notifications have been disabled in this version of the application.
           </p>
         </div>

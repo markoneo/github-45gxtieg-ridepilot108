@@ -1,6 +1,6 @@
 import React from 'react';
-import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Plus } from 'lucide-react';
+import DispatchLayout from '../dispatch/DispatchLayout';
 
 interface SettingsLayoutProps {
   title: string;
@@ -10,40 +10,40 @@ interface SettingsLayoutProps {
 }
 
 export default function SettingsLayout({ title, children, onAdd, addButtonText }: SettingsLayoutProps) {
-  const navigate = useNavigate();
-
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+    <DispatchLayout pageTitle={title}>
+      <div style={{ maxWidth: 1100 }} className="mx-auto">
+        {/* Page header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1
+              className="font-heading"
+              style={{ fontSize: 22, color: 'var(--dp-text)' }}
             >
-              <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
-              <span className="text-sm sm:text-base">Back</span>
-            </button>
+              {title}
+            </h1>
           </div>
           {onAdd && (
             <button
               onClick={onAdd}
-              className="bg-green-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center text-sm"
+              className="flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-90"
+              style={{
+                background: 'var(--dp-accent)',
+                color: 'var(--dp-on-accent)',
+                padding: '10px 18px',
+                borderRadius: 10,
+                border: 'none',
+                minHeight: 40,
+              }}
             >
-              <span>{addButtonText || 'Add New'}</span>
+              <Plus className="w-4 h-4" />
+              {addButtonText || 'Add New'}
             </button>
           )}
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-800">{title}</h2>
-          </div>
-          <div className="overflow-x-auto">
-            {children}
-          </div>
-        </div>
+        {children}
       </div>
-    </div>
+    </DispatchLayout>
   );
 }
